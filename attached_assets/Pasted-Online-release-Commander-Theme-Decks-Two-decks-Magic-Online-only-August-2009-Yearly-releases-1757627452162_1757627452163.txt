@@ -1,0 +1,147 @@
+Online release
+Commander Theme Decks — Two decks, Magic Online only (August 2009).
+Yearly releases
+Commander — Five wedge colored decks (June 2011).
+Commander's Arsenal — 18 foil cards and other goodies (November 2012).
+Commander 2013 — Five shard colored decks, introducing commanders scaling with mana spent and interacting with the command zone. (November 2013).
+Commander 2014 — Five monocolored decks, introducing planeswalker commanders. (November 2014).
+Commander 2015 — Five enemy colored decks, introducing experience counters. (November 2015).
+Commander 2016 — Five 4-color decks (November 2016).
+Commander 2017 — Four tribal decks whose commanders had an eminence ability (August 2017).
+Commander 2018 — Three 3-color decks and one 2-color deck (August 2018).
+Commander 2019 — Three 3-color decks and one 2-color deck (August 2019).
+Anthologies
+Commander Anthology — Four previous Commander decks together in one package (June 2017).
+Commander Anthology Volume II — Four previous Commander decks together in one package (June 2018).
+Master Series
+Commander Masters — a release in the Masters series (August 2023) including draft boosters and 5 preconstructed decks.
+Set Commander decks
+Starting with Commander 2020, the Commander releases are all thematically connected to other sets. This allowed R&D to supplement themes from the main set with new cards to help it work better in Commander decks. It also ties into the excitement for the set, including drafting off of all the marketing for it, it provides the opportunity to flesh out creative elements of the current plane, and it differentiates the decks from one another. Always being a blend of everything previously made them feel too similar.[7] After 2021, the Commander [year] template was abandoned, because all sets featured Commander decks.[8] The following decks were all connected to Standard legal sets.
+
+
+	Date	Release	Alternate name	Code	Decks	Connected to
+
+
+2020-04	Commander 2020	Ikoria Commander	C20	5	Ikoria: Lair of Behemoths
+
+
+2020-09	Zendikar Rising Commander Decks		ZNC	2	Zendikar Rising
+
+
+2020-11	Commander Legends Commander Decks		CMR	2	Commander Legends
+
+
+2021-02	Kaldheim Commander Decks		KHC	2	Kaldheim
+
+
+2021-04	Commander 2021	Strixhaven Commander	C21	5	Strixhaven: School of Mages
+
+
+2021-07	Dungeons & Dragons: Adventures in the Forgotten Realms Commander Decks	Forgotten Realms Commander	AFC	4	Dungeons & Dragons: Adventures in the Forgotten Realms
+
+
+2021-09	Innistrad: Midnight Hunt Commander Decks		MIC	2	Innistrad: Midnight Hunt
+
+
+2021-11	Innistrad: Crimson Vow Commander Decks		VOC	2	Innistrad: Crimson Vow
+
+
+2022-02	Kamigawa: Neon Dynasty Commander Decks		NEC	2	Kamigawa: Neon Dynasty
+
+
+2022-04	Streets of New Capenna Commander Decks	New Capenna Commander	NCC	5	Streets of New Capenna
+
+
+2022-06	Commander Legends: Battle for Baldur's Gate Commander Decks		CLB	4	Commander Legends: Battle for Baldur's Gate
+
+
+2022-09	Dominaria United Commander Decks		DMC	2	Dominaria United
+
+
+2022-11	The Brothers' War Commander Decks		BRC	2	The Brothers' War
+
+
+2023-02	Phyrexia: All Will Be One Commander Decks		ONC	2	Phyrexia: All Will Be One
+
+
+2023-04	March of the Machine Commander Decks		MOC	5	March of the Machine
+
+
+2023-09	Wilds of Eldraine Commander Decks		WOC	2	Wilds of Eldraine
+
+
+2023-11	The Lost Caverns of Ixalan Commander Decks	Lost Caverns Commander	LCC	4	The Lost Caverns of Ixalan
+
+
+2024-02	Murders at Karlov Manor Commander Decks		MKC	4	Murders at Karlov Manor
+
+
+2024-04	Outlaws of Thunder Junction Commander Decks	Thunder Junction Commander	OTC	4	Outlaws of Thunder Junction
+
+
+2024-06	Modern Horizons 3 Commander Decks	MH3 Commander	M3C	4	Modern Horizons 3
+
+
+2024-08	Bloomburrow Commander Decks		BLC	4	Bloomburrow
+
+
+2024-09	Duskmourn: House of Horror Commander Decks	Duskmourn Commander	DSC	4	Duskmourn: House of Horror
+
+
+2025-02	Aetherdrift Commander Decks		DRC	2	Aetherdrift
+
+
+2025-04	Tarkir: Dragonstorm/Commander decks		TDC	5	Tarkir: Dragonstorm
+Starter
+
+	Date	Release	Alternate name	Expansion Code	Decks	Notes
+
+
+2022-12	Starter Commander Decks		SCD	5	Designed for beginning players
+Commander Draft
+
+	Date	Release	Alternate name	Expansion Code	Notes
+
+
+2020-11	Commander Legends		CMR	
+
+
+2022-06	Commander Legends: Battle for Baldur's Gate		CLB	Dungeons & Dragons crossover
+
+
+2023-08	Commander Masters		CMM	Part of the Masters series
+Secret Lair
+
+	Date	Release	Alternate name	Decks	Connected to
+
+
+2021-11	Heads I Win, Tails You Lose		1	Secret Lair Drop Series: Secretversary 2021
+
+
+2023-05	From Cute to Brute		1	N/A
+
+
+2023-08	Angels: They're Just Like Us but Cooler and with Wings		1	N/A
+
+
+2024-01	Raining Cats & Dogs		1	N/A
+
+
+2024-11	20 Ways to Win		1	N/A
+Universes Beyond
+The following non-Standard legal Universes Beyond sets also featured Commander decks.
+
+
+	Date	Release	Alternate name	Decks	Connected to
+
+
+2022-10	Warhammer 40,000 Commander Decks		4	N/A
+
+
+2023-06	The Lord of the Rings: Tales of Middle-Earth Commander Decks	Lord of the Rings Commander	4	The Lord of the Rings: Tales of Middle-Earth
+
+
+2023-10	Doctor Who	Doctor Who Commander Decks	4	N/A
+
+
+2024-03	Fallout	Fallout Commander Decks	4	N/A
