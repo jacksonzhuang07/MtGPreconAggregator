@@ -41,8 +41,13 @@ export const searchScryfallCard = async (name: string, set?: string): Promise<Sc
   }
 };
 
-export const startAnalysis = async (csvData: any[]) => {
-  const response = await apiRequest('POST', '/api/analysis/start', { csvData });
+export const parseDecks = async (csvData: any[]) => {
+  const response = await apiRequest('POST', '/api/decks/parse', { csvData });
+  return response.json();
+};
+
+export const startAnalysis = async (csvData: any[], selectedDecks?: string[]) => {
+  const response = await apiRequest('POST', '/api/analysis/start', { csvData, selectedDecks });
   return response.json();
 };
 

@@ -56,3 +56,21 @@ export interface FilterOptions {
   minPrice?: number;
   maxPrice?: number;
 }
+
+export interface DeckInfo {
+  id: string;
+  name: string;
+  setName: string;
+  releaseYear: number;
+  format: string;
+  commander?: string;
+  cardCount: number;
+  uniqueCardCount: number;
+}
+
+export interface DeckSelectionState {
+  availableDecks: DeckInfo[];
+  selectedDecks: string[];
+  filterYear?: number;
+  filterText?: string;
+}

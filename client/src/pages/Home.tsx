@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileUpload } from '@/components/FileUpload';
+import { DeckSelection } from '@/components/DeckSelection';
 import { ProgressSection } from '@/components/ProgressSection';
 import { StatsSummary } from '@/components/StatsSummary';
 import { FilterControls } from '@/components/FilterControls';
@@ -7,12 +8,14 @@ import { PreconRankingTable } from '@/components/PreconRankingTable';
 import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { usePriceAnalysis } from '@/hooks/usePriceAnalysis';
+import { useDeckSelection } from '@/hooks/useDeckSelection';
 import { useToast } from '@/hooks/use-toast';
-import { RotateCcw, BookOpen, Github, HelpCircle } from 'lucide-react';
+import { RotateCcw, BookOpen, Github, HelpCircle, ArrowLeft } from 'lucide-react';
 import type { CSVRow, FilterOptions } from '@/types';
 
 export default function Home() {
   const [filteredRankings, setFilteredRankings] = useState<any[]>([]);
+  const [uploadedCsvData, setUploadedCsvData] = useState<CSVRow[] | null>(null);
   const { toast } = useToast();
   
   const {
@@ -30,8 +33,28 @@ export default function Home() {
     isCompleted,
   } = usePriceAnalysis();
 
+  const {
+    availableDecks,
+    isParsing,
+    parseDecksFromCsv,
+    clearDecks,
+    hasDecks,
+  } = useDeckSelection();
+
   const handleFileProcessed = (csvData: CSVRow[]) => {
-    startAnalysisProcess(csvData);
+    setUploadedCsvData(csvData);
+    parseDecksFromCsv(csvData);
+  };
+  
+  const handleAnalyzeSelected = (selectedDecks: string[]) => {
+    if (uploadedCsvData) {
+      startAnalysisProcess(uploadedCsvData, selectedDecks);
+    }
+  };
+  
+  const handleBackToSelection = () => {
+    // Reset analysis but keep deck selection
+    resetData();
   };
 
   const handleFilterChange = (filters: FilterOptions) => {
@@ -40,7 +63,7 @@ export default function Home() {
     let filtered = [...rankings];
     
     // Apply format filter
-    if (filters.format && filters.format !== '') {
+    if (filters.format && filters.format !== 'all') {
       filtered = filtered.filter(ranking => 
         ranking.deck.format === filters.format
       );
@@ -107,13 +130,18 @@ export default function Home() {
 
   const handleReset = () => {
     resetData();
+    clearDecks();
+    setUploadedCsvData(null);
     setFilteredRankings([]);
   };
 
   // Set initial filtered rankings when rankings load
-  if (rankings && filteredRankings.length === 0 && !isAnalyzing) {
-    setFilteredRankings(rankings);
-  }
+  // Initialize filtered rankings when rankings are loaded
+  useEffect(() => {
+    if (rankings && filteredRankings.length === 0 && !isAnalyzing) {
+      setFilteredRankings(rankings);
+    }
+  }, [rankings, filteredRankings.length, isAnalyzing]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,7 +161,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              {hasData && (
+              {(hasData || hasDecks) && (
                 <Button
                   variant="outline"
                   onClick={handleReset}
@@ -143,6 +171,18 @@ export default function Home() {
                 >
                   <RotateCcw className="h-4 w-4" />
                   <span>Reset</span>
+                </Button>
+              )}
+              
+              {hasData && !isAnalyzing && (
+                <Button
+                  variant="outline"
+                  onClick={handleBackToSelection}
+                  className="flex items-center space-x-2"
+                  data-testid="button-back-to-selection"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span>Back to Deck Selection</span>
                 </Button>
               )}
               <div className="text-right">
@@ -156,10 +196,37 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* File Upload Section */}
-        <FileUpload 
-          onFileProcessed={handleFileProcessed} 
-          isDisabled={isAnalyzing || isStarting}
-        />
+        {!hasDecks && (
+          <FileUpload 
+            onFileProcessed={handleFileProcessed} 
+            isDisabled={isAnalyzing || isStarting || isParsing}
+          />
+        )}
+        
+        {/* Deck Selection Section */}
+        {hasDecks && !isAnalyzing && !hasData && (
+          <>
+            <div className="mb-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  clearDecks();
+                  setUploadedCsvData(null);
+                }}
+                className="flex items-center space-x-2"
+                data-testid="button-back-to-upload"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Upload Different File</span>
+              </Button>
+            </div>
+            <DeckSelection
+              decks={availableDecks}
+              onAnalyzeSelected={handleAnalyzeSelected}
+              isAnalyzing={isStarting}
+            />
+          </>
+        )}
 
         {/* Progress Section */}
         {isAnalyzing && progress && (
@@ -199,7 +266,7 @@ export default function Home() {
         )}
 
         {/* Empty State */}
-        {!hasData && !isAnalyzing && !isStarting && (
+        {!hasData && !isAnalyzing && !isStarting && !hasDecks && (
           <EmptyState />
         )}
 

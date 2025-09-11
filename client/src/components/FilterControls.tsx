@@ -20,7 +20,7 @@ interface FilterControlsProps {
 
 export function FilterControls({ onFilterChange, onExport }: FilterControlsProps) {
   const [filters, setFilters] = useState<FilterOptions>({
-    format: '',
+    format: 'all',
     search: '',
     minPrice: undefined,
     maxPrice: undefined,
@@ -33,14 +33,14 @@ export function FilterControls({ onFilterChange, onExport }: FilterControlsProps
   };
 
   const formatOptions = [
-    { value: '', label: 'All Formats' },
+    { value: 'all', label: 'All Formats' },
     { value: 'commanderPrecons', label: 'Commander' },
     { value: 'standardPrecons', label: 'Standard' },
     { value: 'modernPrecons', label: 'Modern' },
   ];
 
   const priceRangeOptions = [
-    { value: '', label: 'All Prices' },
+    { value: 'all', label: 'All Prices' },
     { value: 'under50', label: 'Under $50', min: 0, max: 50 },
     { value: '50-100', label: '$50 - $100', min: 50, max: 100 },
     { value: '100-200', label: '$100 - $200', min: 100, max: 200 },
@@ -49,9 +49,12 @@ export function FilterControls({ onFilterChange, onExport }: FilterControlsProps
 
   const handlePriceRangeChange = (value: string) => {
     const option = priceRangeOptions.find(opt => opt.value === value);
-    if (option) {
+    if (option && option.value !== 'all') {
       handleFilterChange('minPrice', option.min);
       handleFilterChange('maxPrice', option.max);
+    } else {
+      handleFilterChange('minPrice', undefined);
+      handleFilterChange('maxPrice', undefined);
     }
   };
 

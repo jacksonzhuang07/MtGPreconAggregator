@@ -33,10 +33,59 @@ async function fetchCardPrice(cardName: string, setCode?: string): Promise<numbe
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Start price analysis job
-  app.post("/api/analysis/start", async (req, res) => {
+  // Parse CSV and extract deck information without analyzing
+  app.post("/api/decks/parse", async (req, res) => {
     try {
       const { csvData } = req.body;
+      if (!csvData || !Array.isArray(csvData)) {
+        return res.status(400).json({ error: "Invalid CSV data" });
+      }
+
+      // Extract unique deck information
+      const deckMap = new Map<string, any>();
+      
+      for (const row of csvData) {
+        if (!row.name || !row.info?.name) continue;
+        
+        const deckId = row.name;
+        const setName = row.info.set_name || "Unknown Set";
+        const releaseYear = extractReleaseYear(setName);
+        
+        if (!deckMap.has(deckId)) {
+          deckMap.set(deckId, {
+            id: deckId,
+            name: deckId,
+            setName,
+            releaseYear,
+            format: row.format || "unknown",
+            commander: extractCommander(deckId),
+            cardCount: 0,
+            uniqueCards: new Set(),
+          });
+        }
+        
+        const deck = deckMap.get(deckId)!;
+        deck.cardCount += (row.quantity || 1);
+        deck.uniqueCards.add(row.info.name);
+      }
+      
+      // Convert to array and add unique card counts
+      const decks = Array.from(deckMap.values()).map(deck => ({
+        ...deck,
+        uniqueCardCount: deck.uniqueCards.size,
+        uniqueCards: undefined, // Remove Set object for serialization
+      }));
+      
+      res.json(decks);
+    } catch (error) {
+      console.error("Error parsing decks:", error);
+      res.status(500).json({ error: "Failed to parse decks" });
+    }
+  });
+  // Start price analysis job with selected decks
+  app.post("/api/analysis/start", async (req, res) => {
+    try {
+      const { csvData, selectedDecks } = req.body;
       if (!csvData || !Array.isArray(csvData)) {
         return res.status(400).json({ error: "Invalid CSV data" });
       }
@@ -49,8 +98,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errorMessage: null,
       });
 
-      // Process CSV data in background
-      processCsvData(job.id, csvData);
+      // Process CSV data in background with selected decks filter
+      processCsvData(job.id, csvData, selectedDecks);
 
       res.json({ jobId: job.id });
     } catch (error) {
@@ -168,11 +217,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 // Background processing function
-async function processCsvData(jobId: string, csvData: any[]) {
+async function processCsvData(jobId: string, csvData: any[], selectedDecks?: string[]) {
   try {
     await storage.updateAnalysisJob(jobId, { status: "processing" });
 
-    // Group cards by deck
+    // Group cards by deck, filtering by selected decks if provided
     const deckMap = new Map<string, any>();
     const uniqueCards = new Set<string>();
 
@@ -182,6 +231,11 @@ async function processCsvData(jobId: string, csvData: any[]) {
       const deckName = row.name;
       const cardName = row.info.name;
       const setCode = row.info.set;
+      
+      // Skip decks not in selected list if filtering is enabled
+      if (selectedDecks && selectedDecks.length > 0 && !selectedDecks.includes(deckName)) {
+        continue;
+      }
 
       if (!deckMap.has(deckName)) {
         deckMap.set(deckName, {
@@ -304,6 +358,41 @@ function extractCommander(deckName: string): string | null {
   // Try to extract commander name from deck name
   const match = deckName.match(/Commander:\s*([^,\)]+)/i);
   return match ? match[1].trim() : null;
+}
+
+function extractReleaseYear(setName: string): number {
+  // Extract year from set names like "Tarkir: Dragonstorm Commander" (2025)
+  // Map known sets to release years
+  const setYearMap: Record<string, number> = {
+    "Tarkir: Dragonstorm Commander": 2025,
+    "Tarkir: Dragonstorm": 2025,
+    "Commander 2024": 2024,
+    "Commander 2023": 2023,
+    "Commander 2022": 2022,
+    "Commander 2021": 2021,
+    "Commander 2020": 2020,
+    "Commander 2019": 2019,
+    "Commander 2018": 2018,
+    "Commander 2017": 2017,
+    "Commander 2016": 2016,
+    "Commander 2015": 2015,
+    "Commander 2014": 2014,
+    "Commander 2013": 2013,
+  };
+  
+  // Check exact matches first
+  if (setYearMap[setName]) {
+    return setYearMap[setName];
+  }
+  
+  // Try to extract year from string patterns
+  const yearMatch = setName.match(/(20\d{2})/);
+  if (yearMatch) {
+    return parseInt(yearMatch[1], 10);
+  }
+  
+  // Default to current year if unknown
+  return new Date().getFullYear();
 }
 
 function getProgressMessage(status: string, current: number, total: number): string {
