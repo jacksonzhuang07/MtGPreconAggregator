@@ -1,0 +1,19 @@
+name,info.name,info.set,info.set_name,info.rarity,quantity,finish,info.scryfall_id,format
+Core Set Sample Deck,Lightning Bolt,CLU,Ravnica Clue Edition,Uncommon,1,nonFoil,77c6fa74-5543-42ac-9ead-0e890b188e99,Standard
+Core Set Sample Deck,Counterspell,2XM,Double Masters 2022,Common,2,nonFoil,,,Standard
+Core Set Sample Deck,Opt,XLN,Ixalan,Common,4,nonFoil,,,Standard
+Core Set Sample Deck,Island,XLN,Ixalan,Common,8,nonFoil,,,Standard
+Core Set Sample Deck,Mountain,XLN,Ixalan,Common,8,nonFoil,,,Standard
+Atraxa Deck,Sol Ring,C20,Commander 2020,Uncommon,1,nonFoil,ee6e5a35-fe21-4dee-b0ef-a8f2841511ad,Commander
+Atraxa Deck,Atraxa Praetors' Voice,C16,Commander 2016,Mythic,1,nonFoil,,,Commander
+Atraxa Deck,Command Tower,C21,Commander 2021,Common,1,nonFoil,,,Commander
+Atraxa Deck,Chromatic Lantern,RTR,Return to Ravnica,Rare,1,nonFoil,,,Commander
+Atraxa Deck,Eternal Witness,5DN,Fifth Dawn,Uncommon,1,nonFoil,,,Commander
+Atraxa Deck,Swamp,C21,Commander 2021,Common,5,nonFoil,,,Commander
+Atraxa Deck,Forest,C21,Commander 2021,Common,5,nonFoil,,,Commander
+Atraxa Deck,Plains,C21,Commander 2021,Common,5,nonFoil,,,Commander
+Teferi Control,Teferi Master of Time,M21,Core Set 2021,Mythic,1,foil,,,Standard
+Teferi Control,Dovin's Veto,WAR,War of the Spark,Uncommon,3,nonFoil,,,Standard
+Teferi Control,Absorb,RNA,Ravnica Allegiance,Rare,2,nonFoil,,,Standard
+Teferi Control,Hallowed Fountain,RNA,Ravnica Allegiance,Rare,4,nonFoil,,,Standard
+Teferi Control,Temple of Enlightenment,THB,Theros Beyond Death,Rare,2,nonFoil,,,Standard

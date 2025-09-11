@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Eye, Download, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CardBreakdown } from '@/components/CardBreakdown';
 import type { DeckRanking } from '@/types';
 
 interface PreconRankingTableProps {
@@ -103,7 +104,7 @@ export function PreconRankingTable({
                 <TableHead>Format</TableHead>
                 <TableHead className="text-right">Cards</TableHead>
                 <TableHead className="text-right">Total Value</TableHead>
-                <TableHead className="text-center w-24">Actions</TableHead>
+                <TableHead className="text-center w-32">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -154,7 +155,12 @@ export function PreconRankingTable({
                     </span>
                   </TableCell>
                   <TableCell className="text-center">
-                    <div className="flex items-center justify-center space-x-2">
+                    <div className="flex items-center justify-center space-x-1">
+                      <CardBreakdown
+                        deckId={ranking.deck.id}
+                        deckName={ranking.deck.name}
+                        totalValue={ranking.totalValue}
+                      />
                       {onViewDeck && (
                         <Button
                           variant="ghost"
@@ -183,6 +189,7 @@ export function PreconRankingTable({
                   </TableCell>
                 </TableRow>
               ))}
+              {/* Collapsible content will be rendered by CardBreakdown component */}
             </TableBody>
           </Table>
         </div>

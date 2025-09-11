@@ -23,9 +23,12 @@ async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: s
       }
     }
     
+    console.log(`Fetching price for ${cardName} from: ${url}`);
+    
     const response = await fetch(url);
     if (!response.ok) {
       if (response.status === 404) {
+        console.log(`Card not found on Scryfall: ${cardName}`);
         return null; // Card not found
       }
       throw new Error(`Scryfall API error: ${response.status}`);
@@ -33,7 +36,9 @@ async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: s
     
     const data = await response.json();
     const price = data.prices?.usd;
-    return price ? parseFloat(price) : null;
+    const parsedPrice = price ? parseFloat(price) : null;
+    console.log(`Price for ${cardName}: ${parsedPrice || 'null'} (raw: ${price})`);
+    return parsedPrice;
   } catch (error) {
     console.error(`Error fetching price for ${cardName} (ID: ${scryfallId}):`, error);
     return null;
@@ -166,6 +171,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting stats:", error);
       res.status(500).json({ error: "Failed to get stats" });
+    }
+  });
+
+  // Get deck details with card breakdown
+  app.get("/api/decks/:deckId/details", async (req, res) => {
+    try {
+      const { deckId } = req.params;
+      const deckDetails = await storage.getPreconDeckWithDetails(deckId);
+      
+      if (!deckDetails) {
+        return res.status(404).json({ error: "Deck not found" });
+      }
+
+      // Format the response to include card breakdown with pricing
+      const cardBreakdown = deckDetails.cards.map(deckCard => {
+        const quantity = deckCard.quantity || 1;
+        const priceUsd = deckCard.card.priceUsd || 0;
+        return {
+          name: deckCard.card.name,
+          setCode: deckCard.card.setCode,
+          setName: deckCard.card.setName,
+          quantity,
+          finish: deckCard.finish || 'nonFoil',
+          priceUsd,
+          totalPrice: priceUsd * quantity,
+          manaCost: deckCard.card.manaCost,
+          type: deckCard.card.type,
+          rarity: deckCard.card.rarity,
+        };
+      }).sort((a, b) => b.totalPrice - a.totalPrice); // Sort by total price descending
+
+      res.json({
+        deck: {
+          id: deckDetails.id,
+          name: deckDetails.name,
+          format: deckDetails.format,
+          commander: deckDetails.commander,
+          totalValue: deckDetails.totalValue,
+          cardCount: deckDetails.cardCount,
+          uniqueCardCount: deckDetails.uniqueCardCount,
+        },
+        cards: cardBreakdown,
+      });
+    } catch (error) {
+      console.error("Error getting deck details:", error);
+      res.status(500).json({ error: "Failed to get deck details" });
     }
   });
 

@@ -74,3 +74,29 @@ export interface DeckSelectionState {
   filterYear?: number;
   filterText?: string;
 }
+
+export interface CardBreakdownItem {
+  name: string;
+  setCode?: string;
+  setName?: string;
+  quantity: number;
+  finish: string;
+  priceUsd: number;
+  totalPrice: number;
+  manaCost?: string;
+  type?: string;
+  rarity?: string;
+}
+
+export interface DeckDetails {
+  deck: {
+    id: string;
+    name: string;
+    format: string;
+    commander?: string;
+    totalValue: number;
+    cardCount: number;
+    uniqueCardCount: number;
+  };
+  cards: CardBreakdownItem[];
+}
