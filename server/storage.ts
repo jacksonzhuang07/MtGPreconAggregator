@@ -64,6 +64,14 @@ export class MemStorage implements IStorage {
       ...insertCard,
       id,
       priceUpdatedAt: new Date().toISOString(),
+      type: insertCard.type || null,
+      setCode: insertCard.setCode || null,
+      setName: insertCard.setName || null,
+      scryfallId: insertCard.scryfallId || null,
+      manaCost: insertCard.manaCost || null,
+      cmc: insertCard.cmc || null,
+      rarity: insertCard.rarity || null,
+      priceUsd: insertCard.priceUsd || null,
     };
     this.cards.set(id, card);
     return card;
@@ -106,6 +114,9 @@ export class MemStorage implements IStorage {
       totalValue: 0,
       cardCount: 0,
       uniqueCardCount: 0,
+      description: insertDeck.description || null,
+      commander: insertDeck.commander || null,
+      publicUrl: insertDeck.publicUrl || null,
     };
     this.preconDecks.set(id, deck);
     return deck;
@@ -166,6 +177,8 @@ export class MemStorage implements IStorage {
     const deckCard: DeckCard = {
       ...insertDeckCard,
       id,
+      finish: insertDeckCard.finish || null,
+      quantity: insertDeckCard.quantity || null,
     };
     this.deckCards.set(id, deckCard);
     return deckCard;
@@ -187,6 +200,10 @@ export class MemStorage implements IStorage {
     const job: AnalysisJob = {
       ...insertJob,
       id,
+      status: insertJob.status || "pending",
+      totalCards: insertJob.totalCards || null,
+      processedCards: insertJob.processedCards || null,
+      errorMessage: insertJob.errorMessage || null,
       startedAt: new Date().toISOString(),
       completedAt: null,
     };

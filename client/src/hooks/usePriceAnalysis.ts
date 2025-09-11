@@ -63,7 +63,8 @@ export const usePriceAnalysis = () => {
     queryKey: ['/api/analysis', analysisJobId, 'progress'],
     queryFn: () => getAnalysisProgress(analysisJobId!),
     enabled: !!analysisJobId && isAnalyzing,
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
+      const data = query.state.data;
       // Stop polling when completed or failed
       if (data?.status === 'completed' || data?.status === 'failed') {
         setIsAnalyzing(false);

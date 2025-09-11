@@ -69,7 +69,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Job not found" });
       }
 
-      const percentage = job.totalCards > 0 ? Math.round((job.processedCards / job.totalCards) * 100) : 0;
+      const totalCards = job.totalCards || 0;
+      const processedCards = job.processedCards || 0;
+      const percentage = totalCards > 0 ? Math.round((processedCards / totalCards) * 100) : 0;
       
       res.json({
         jobId: job.id,
@@ -77,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         current: job.processedCards,
         total: job.totalCards,
         percentage,
-        message: getProgressMessage(job.status, job.processedCards, job.totalCards),
+        message: getProgressMessage(job.status, processedCards, totalCards),
       });
     } catch (error) {
       console.error("Error getting progress:", error);
@@ -214,7 +216,7 @@ async function processCsvData(jobId: string, csvData: any[]) {
     const cardPriceMap = new Map<string, number>();
     let processedCards = 0;
 
-    for (const cardKey of uniqueCards) {
+    for (const cardKey of Array.from(uniqueCards)) {
       const [cardName, setCode] = cardKey.split('|');
       
       // Check if we already have this card
@@ -247,7 +249,7 @@ async function processCsvData(jobId: string, csvData: any[]) {
     }
 
     // Create deck records and calculate values
-    for (const [deckName, deckData] of deckMap) {
+    for (const [deckName, deckData] of Array.from(deckMap.entries())) {
       const deck = await storage.createPreconDeck({
         name: deckData.name,
         format: deckData.format,
