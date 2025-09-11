@@ -6,13 +6,21 @@ import { z } from "zod";
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Scryfall API integration
-async function fetchCardPrice(cardName: string, setCode?: string): Promise<number | null> {
+async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: string): Promise<number | null> {
   try {
     await sleep(100); // Rate limiting - Scryfall recommends 50-100ms delays
     
-    let url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}`;
-    if (setCode) {
-      url += `&set=${setCode}`;
+    let url: string;
+    
+    // Use Scryfall ID for exact card lookup if available (more accurate)
+    if (scryfallId) {
+      url = `https://api.scryfall.com/cards/${scryfallId}`;
+    } else {
+      // Fallback to name-based lookup
+      url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cardName)}`;
+      if (setCode) {
+        url += `&set=${setCode}`;
+      }
     }
     
     const response = await fetch(url);
@@ -27,7 +35,7 @@ async function fetchCardPrice(cardName: string, setCode?: string): Promise<numbe
     const price = data.prices?.usd;
     return price ? parseFloat(price) : null;
   } catch (error) {
-    console.error(`Error fetching price for ${cardName}:`, error);
+    console.error(`Error fetching price for ${cardName} (ID: ${scryfallId}):`, error);
     return null;
   }
 }
@@ -260,7 +268,7 @@ async function processCsvData(jobId: string, csvData: any[], selectedDecks?: str
         rarity: row.info.rarity,
       });
 
-      uniqueCards.add(`${cardName}|${setCode || ''}`);
+      uniqueCards.add(`${cardName}|${setCode || ''}|${row.info.scryfall_id || ''}`);
     }
 
     const totalCards = uniqueCards.size;
@@ -271,21 +279,21 @@ async function processCsvData(jobId: string, csvData: any[], selectedDecks?: str
     let processedCards = 0;
 
     for (const cardKey of Array.from(uniqueCards)) {
-      const [cardName, setCode] = cardKey.split('|');
+      const [cardName, setCode, scryfallId] = cardKey.split('|');
       
       // Check if we already have this card
       let card = await storage.getCardByName(cardName, setCode || undefined);
       
       if (!card) {
-        // Fetch price from Scryfall
-        const price = await fetchCardPrice(cardName, setCode || undefined);
+        // Fetch price from Scryfall using scryfall_id when available for more accurate pricing
+        const price = await fetchCardPrice(cardName, setCode || undefined, scryfallId || undefined);
         
-        // Create new card record
+        // Create new card record with scryfall_id
         card = await storage.createCard({
           name: cardName,
           setCode: setCode || null,
           priceUsd: price,
-          scryfallId: null,
+          scryfallId: scryfallId || null,
           setName: null,
           manaCost: null,
           cmc: null,
@@ -317,7 +325,7 @@ async function processCsvData(jobId: string, csvData: any[], selectedDecks?: str
       const uniqueCardIds = new Set<string>();
 
       for (const cardData of deckData.cards) {
-        const cardKey = `${cardData.name}|${cardData.setCode || ''}`;
+        const cardKey = `${cardData.name}|${cardData.setCode || ''}|${cardData.scryfall_id || ''}`;
         const card = await storage.getCardByName(cardData.name, cardData.setCode);
         
         if (card) {
