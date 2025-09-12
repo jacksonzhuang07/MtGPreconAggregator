@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract unique deck information using CSV release dates
       const deckMap = new Map<string, any>();
       
-      for (const [deckId, rows] of deckRowsMap.entries()) {
+      for (const [deckId, rows] of Array.from(deckRowsMap.entries())) {
         const firstRow = rows[0];
         const setName = firstRow.info.set_name || "Unknown Set";
         const releaseYear = getDeckReleaseYear(rows);
