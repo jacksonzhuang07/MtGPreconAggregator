@@ -6,8 +6,8 @@ export const parseCSVFile = (file: File): Promise<CSVRow[]> => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
-      transformHeader: (header) => header.trim(),
-      transform: (value) => value.trim(),
+      transformHeader: (header) => typeof header === 'string' ? header.trim() : header,
+      transform: (value) => typeof value === 'string' ? value.trim() : value,
       complete: (results) => {
         if (results.errors.length > 0) {
           reject(new Error(`CSV parsing error: ${results.errors[0].message}`));

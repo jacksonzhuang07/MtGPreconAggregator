@@ -23,15 +23,23 @@ function parsePriceFromCSV(pricesString?: string): number | null {
     const prices = JSON.parse(jsonString);
     
     // Prioritize USD price, fall back to other sources if needed
-    if (prices.usd && typeof prices.usd === 'number') {
-      return prices.usd;
+    const parsePrice = (value: any): number | null => {
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string' && !isNaN(parseFloat(value))) return parseFloat(value);
+      return null;
+    };
+    
+    const usdPrice = parsePrice(prices.usd);
+    if (usdPrice !== null) {
+      return usdPrice;
     }
     
     // Fallback to other price sources if USD not available
     const fallbackSources = ['ck', 'scg', 'ct', 'csi'];
     for (const source of fallbackSources) {
-      if (prices[source] && typeof prices[source] === 'number') {
-        return prices[source];
+      const price = parsePrice(prices[source]);
+      if (price !== null) {
+        return price;
       }
     }
     
