@@ -46,7 +46,8 @@ export const parseDecks = async (csvData: any[]) => {
   return response.json();
 };
 
-export const startAnalysis = async (csvData: any[], selectedDecks?: string[]) => {
+export const startAnalysis = async (csvData: any[] | null, selectedDecks?: string[]) => {
+  // For embedded data, csvData can be null
   const response = await apiRequest('POST', '/api/analysis/start', { csvData, selectedDecks });
   return response.json();
 };

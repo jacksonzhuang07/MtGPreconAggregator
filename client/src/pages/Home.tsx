@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react';
-import { FileUpload } from '@/components/FileUpload';
 import { DeckSelection } from '@/components/DeckSelection';
 import { ProgressSection } from '@/components/ProgressSection';
 import { StatsSummary } from '@/components/StatsSummary';
 import { FilterControls } from '@/components/FilterControls';
 import { PreconRankingTable } from '@/components/PreconRankingTable';
-import { EmptyState } from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { usePriceAnalysis } from '@/hooks/usePriceAnalysis';
 import { useDeckSelection } from '@/hooks/useDeckSelection';
 import { useToast } from '@/hooks/use-toast';
 import { RotateCcw, BookOpen, Github, HelpCircle, ArrowLeft } from 'lucide-react';
-import type { CSVRow, FilterOptions } from '@/types';
+import type { FilterOptions } from '@/types';
 
 export default function Home() {
   const [filteredRankings, setFilteredRankings] = useState<any[]>([]);
-  const [uploadedCsvData, setUploadedCsvData] = useState<CSVRow[] | null>(null);
   const { toast } = useToast();
   
   const {
@@ -36,20 +33,14 @@ export default function Home() {
   const {
     availableDecks,
     isParsing,
-    parseDecksFromCsv,
+    loadEmbeddedDecks,
     clearDecks,
     hasDecks,
   } = useDeckSelection();
 
-  const handleFileProcessed = (csvData: CSVRow[]) => {
-    setUploadedCsvData(csvData);
-    parseDecksFromCsv(csvData);
-  };
-  
   const handleAnalyzeSelected = (selectedDecks: string[]) => {
-    if (uploadedCsvData) {
-      startAnalysisProcess(uploadedCsvData, selectedDecks);
-    }
+    // Use embedded data, no CSV needed
+    startAnalysisProcess(null, selectedDecks);
   };
   
   const handleBackToSelection = () => {
@@ -130,12 +121,16 @@ export default function Home() {
 
   const handleReset = () => {
     resetData();
-    clearDecks();
-    setUploadedCsvData(null);
     setFilteredRankings([]);
+    // Reload embedded decks
+    loadEmbeddedDecks();
   };
 
-  // Set initial filtered rankings when rankings load
+  // Load embedded decks on mount
+  useEffect(() => {
+    loadEmbeddedDecks();
+  }, [loadEmbeddedDecks]);
+
   // Initialize filtered rankings when rankings are loaded
   useEffect(() => {
     if (rankings && filteredRankings.length === 0 && !isAnalyzing) {
@@ -195,37 +190,21 @@ export default function Home() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* File Upload Section */}
-        {!hasDecks && (
-          <FileUpload 
-            onFileProcessed={handleFileProcessed} 
-            isDisabled={isAnalyzing || isStarting || isParsing}
+        {/* Deck Selection Section */}
+        {hasDecks && !isAnalyzing && !hasData && (
+          <DeckSelection
+            decks={availableDecks}
+            onAnalyzeSelected={handleAnalyzeSelected}
+            isAnalyzing={isStarting}
           />
         )}
         
-        {/* Deck Selection Section */}
-        {hasDecks && !isAnalyzing && !hasData && (
-          <>
-            <div className="mb-4">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  clearDecks();
-                  setUploadedCsvData(null);
-                }}
-                className="flex items-center space-x-2"
-                data-testid="button-back-to-upload"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span>Upload Different File</span>
-              </Button>
-            </div>
-            <DeckSelection
-              decks={availableDecks}
-              onAnalyzeSelected={handleAnalyzeSelected}
-              isAnalyzing={isStarting}
-            />
-          </>
+        {/* Loading State */}
+        {isParsing && (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Loading Embedded Data</h3>
+            <p className="text-muted-foreground">Preparing MTG precon deck data...</p>
+          </div>
         )}
 
         {/* Progress Section */}
@@ -265,9 +244,12 @@ export default function Home() {
           />
         )}
 
-        {/* Empty State */}
-        {!hasData && !isAnalyzing && !isStarting && !hasDecks && (
-          <EmptyState />
+        {/* Loading Initial State */}
+        {!hasData && !isAnalyzing && !isStarting && !hasDecks && !isParsing && (
+          <div className="text-center py-12">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Loading...</h3>
+            <p className="text-muted-foreground">Preparing MTG precon data...</p>
+          </div>
         )}
 
         {/* No Results State */}

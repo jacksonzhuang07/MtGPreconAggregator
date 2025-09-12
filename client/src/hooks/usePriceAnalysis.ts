@@ -18,7 +18,7 @@ export const usePriceAnalysis = () => {
 
   // Start analysis mutation
   const startAnalysisMutation = useMutation({
-    mutationFn: ({ csvData, selectedDecks }: { csvData: CSVRow[], selectedDecks?: string[] }) => 
+    mutationFn: ({ csvData, selectedDecks }: { csvData: CSVRow[] | null, selectedDecks?: string[] }) => 
       startAnalysis(csvData, selectedDecks),
     onSuccess: (data) => {
       setAnalysisJobId(data.jobId);
@@ -108,7 +108,7 @@ export const usePriceAnalysis = () => {
     enabled: !isAnalyzing && !!analysisJobId,
   });
 
-  const startAnalysisProcess = useCallback((csvData: CSVRow[], selectedDecks?: string[]) => {
+  const startAnalysisProcess = useCallback((csvData: CSVRow[] | null, selectedDecks?: string[]) => {
     startAnalysisMutation.mutate({ csvData, selectedDecks });
   }, [startAnalysisMutation]);
 

@@ -9,19 +9,26 @@ export const useDeckSelection = () => {
   const [isParsing, setIsParsing] = useState(false);
   const { toast } = useToast();
 
-  // Parse decks mutation
-  const parseDecksMutation = useMutation({
-    mutationFn: parseDecks,
+  // Load embedded decks mutation
+  const loadDecksMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/decks/parse');
+      if (!response.ok) {
+        throw new Error('Failed to load embedded deck data');
+      }
+      const data = await response.json();
+      return data.decks;
+    },
     onSuccess: (decks: DeckInfo[]) => {
       setAvailableDecks(decks);
       toast({
-        title: "Decks parsed successfully",
-        description: `Found ${decks.length} unique commander decks. Select the ones you want to analyze.`,
+        title: "Decks loaded successfully",
+        description: `Found ${decks.length} precon deck(s) ready for analysis.`,
       });
     },
     onError: (error) => {
       toast({
-        title: "Failed to parse decks",
+        title: "Failed to load decks",
         description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
@@ -30,9 +37,13 @@ export const useDeckSelection = () => {
 
   const parseDecksFromCsv = useCallback((csvData: CSVRow[]) => {
     setIsParsing(true);
-    parseDecksMutation.mutate(csvData);
+    // Legacy function for backwards compatibility - not used with embedded data
     setIsParsing(false);
-  }, [parseDecksMutation]);
+  }, []);
+
+  const loadEmbeddedDecks = useCallback(() => {
+    loadDecksMutation.mutate();
+  }, [loadDecksMutation]);
 
   const clearDecks = useCallback(() => {
     setAvailableDecks([]);
@@ -41,10 +52,11 @@ export const useDeckSelection = () => {
   return {
     // State
     availableDecks,
-    isParsing: isParsing || parseDecksMutation.isPending,
+    isParsing: isParsing || loadDecksMutation.isPending,
     
     // Actions
-    parseDecksFromCsv,
+    parseDecksFromCsv, // Legacy compatibility
+    loadEmbeddedDecks,
     clearDecks,
     
     // Computed
