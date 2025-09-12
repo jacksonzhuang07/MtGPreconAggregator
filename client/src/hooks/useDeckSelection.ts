@@ -12,8 +12,14 @@ export const useDeckSelection = () => {
   // Load embedded decks mutation
   const loadDecksMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/decks/parse');
-      if (!response.ok) {
+      const response = await fetch('/api/decks/parse', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      // Handle 304 responses (cache hits) as successful
+      if (!response.ok && response.status !== 304) {
         throw new Error('Failed to load embedded deck data');
       }
       const data = await response.json();
