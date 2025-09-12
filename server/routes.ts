@@ -7,7 +7,51 @@ import { extractReleaseYearFromDeckName } from './precon-release-mapping';
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Scryfall API integration
-async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: string): Promise<number | null> {
+// Parse price data from CSV info.prices field
+function parsePriceFromCSV(pricesString?: string): number | null {
+  if (!pricesString) return null;
+  
+  try {
+    // The prices field is a string representation of a Python dictionary
+    // Convert it to a JavaScript object by replacing single quotes with double quotes
+    const jsonString = pricesString
+      .replace(/'/g, '"')
+      .replace(/True/g, 'true')
+      .replace(/False/g, 'false')
+      .replace(/None/g, 'null');
+    
+    const prices = JSON.parse(jsonString);
+    
+    // Prioritize USD price, fall back to other sources if needed
+    if (prices.usd && typeof prices.usd === 'number') {
+      return prices.usd;
+    }
+    
+    // Fallback to other price sources if USD not available
+    const fallbackSources = ['ck', 'scg', 'ct', 'csi'];
+    for (const source of fallbackSources) {
+      if (prices[source] && typeof prices[source] === 'number') {
+        return prices[source];
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error parsing price data: ${pricesString}`, error);
+    return null;
+  }
+}
+
+async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: string, csvPrices?: string): Promise<number | null> {
+  // First try to get price from CSV data
+  const csvPrice = parsePriceFromCSV(csvPrices);
+  if (csvPrice !== null) {
+    console.log(`Using CSV price for ${cardName}: $${csvPrice}`);
+    return csvPrice;
+  }
+  
+  // Fallback to Scryfall API if no CSV price available
+  console.log(`No CSV price for ${cardName}, falling back to Scryfall API`);
   try {
     await sleep(100); // Rate limiting - Scryfall recommends 50-100ms delays
     
@@ -296,6 +340,7 @@ async function processCsvData(jobId: string, csvData: any[], selectedDecks?: str
     // Group cards by deck, filtering by selected decks if provided
     const deckMap = new Map<string, any>();
     const uniqueCards = new Set<string>();
+    const cardPriceDataMap = new Map<string, string>(); // Store CSV price data for each card
 
     for (const row of csvData) {
       if (!row.name || !row.info?.name) continue;
@@ -330,9 +375,17 @@ async function processCsvData(jobId: string, csvData: any[], selectedDecks?: str
         cmc: row.info.cmc,
         type: row.info.type_line,
         rarity: row.info.rarity,
+        prices: row.info.prices, // Include CSV price data
       });
 
-      uniqueCards.add(`${cardName}|${setCode || ''}|${row.info.scryfall_id || ''}`);
+      // Store price data for each unique card
+      const cardKey = `${cardName}|${setCode || ''}|${row.info.scryfall_id || ''}`;
+      uniqueCards.add(cardKey);
+      
+      // Create a map to store CSV price data for each card
+      if (!cardPriceDataMap.has(cardKey) && row.info.prices) {
+        cardPriceDataMap.set(cardKey, row.info.prices);
+      }
     }
 
     const totalCards = uniqueCards.size;
@@ -349,8 +402,11 @@ async function processCsvData(jobId: string, csvData: any[], selectedDecks?: str
       let card = await storage.getCardByName(cardName, setCode || undefined);
       
       if (!card) {
-        // Fetch price from Scryfall using scryfall_id when available for more accurate pricing
-        const price = await fetchCardPrice(cardName, setCode || undefined, scryfallId || undefined);
+        // Get CSV price data for this card
+        const csvPriceData = cardPriceDataMap.get(cardKey);
+        
+        // Fetch price using CSV data first, fallback to Scryfall if needed
+        const price = await fetchCardPrice(cardName, setCode || undefined, scryfallId || undefined, csvPriceData);
         
         // Create new card record with scryfall_id
         card = await storage.createCard({

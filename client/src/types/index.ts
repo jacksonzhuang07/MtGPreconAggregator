@@ -16,6 +16,7 @@ export interface CSVRow {
     type_line?: string;
     rarity?: string;
     released_at?: string;
+    prices?: string;
   };
 }
 

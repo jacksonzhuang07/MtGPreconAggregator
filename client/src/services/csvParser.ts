@@ -33,6 +33,7 @@ export const parseCSVFile = (file: File): Promise<CSVRow[]> => {
               type_line: row['info.type_line'],
               rarity: row['info.rarity'],
               released_at: row['info.released_at'],
+              prices: row['info.prices'],
             },
           }));
 
