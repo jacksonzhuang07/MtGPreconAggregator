@@ -55,32 +55,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid CSV data" });
       }
 
-      // Extract unique deck information
-      const deckMap = new Map<string, any>();
+      // First, group all rows by deck name to calculate release years from CSV data
+      const deckRowsMap = new Map<string, any[]>();
       
       for (const row of csvData) {
         if (!row.name || !row.info?.name) continue;
         
         const deckId = row.name;
-        const setName = row.info.set_name || "Unknown Set";
-        const releaseYear = extractReleaseYear(deckId, setName);
-        
-        if (!deckMap.has(deckId)) {
-          deckMap.set(deckId, {
-            id: deckId,
-            name: deckId,
-            setName,
-            releaseYear,
-            format: row.format || "unknown",
-            commander: extractCommander(deckId),
-            cardCount: 0,
-            uniqueCards: new Set(),
-          });
+        if (!deckRowsMap.has(deckId)) {
+          deckRowsMap.set(deckId, []);
         }
+        deckRowsMap.get(deckId)!.push(row);
+      }
+
+      // Extract unique deck information using CSV release dates
+      const deckMap = new Map<string, any>();
+      
+      for (const [deckId, rows] of deckRowsMap.entries()) {
+        const firstRow = rows[0];
+        const setName = firstRow.info.set_name || "Unknown Set";
+        const releaseYear = getDeckReleaseYear(rows);
         
-        const deck = deckMap.get(deckId)!;
-        deck.cardCount += (row.quantity || 1);
-        deck.uniqueCards.add(row.info.name);
+        deckMap.set(deckId, {
+          id: deckId,
+          name: deckId,
+          setName,
+          releaseYear,
+          format: firstRow.format || "unknown",
+          commander: extractCommander(deckId),
+          cardCount: 0,
+          uniqueCards: new Set(),
+        });
+        
+        // Add cards from all rows for this deck
+        for (const row of rows) {
+          const deck = deckMap.get(deckId)!;
+          deck.cardCount += (row.quantity || 1);
+          deck.uniqueCards.add(row.info.name);
+        }
       }
       
       // Convert to array and add unique card counts
@@ -420,7 +432,37 @@ function extractCommander(deckName: string): string | null {
   return match ? match[1].trim() : null;
 }
 
-function extractReleaseYear(deckName: string, setName?: string): number {
+function getDeckReleaseYear(rows: any[]): number {
+  // First priority: Use info.released_at from CSV data
+  const releaseDates = rows
+    .map(row => row.info?.released_at)
+    .filter(date => date && typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/))
+    .map(date => parseInt(date.slice(0, 4), 10))
+    .filter(year => year >= 2011 && year <= 2030); // Reasonable range for MTG
+
+  if (releaseDates.length > 0) {
+    // Use the most common release year, or the first one if all are the same
+    const yearCounts = releaseDates.reduce((acc, year) => {
+      acc[year] = (acc[year] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+    
+    const mostCommonYear = Object.entries(yearCounts)
+      .sort(([,a], [,b]) => b - a)[0][0];
+    
+    return parseInt(mostCommonYear, 10);
+  }
+
+  // Fallback to legacy extraction using deck name and set name
+  const firstRow = rows[0];
+  if (firstRow) {
+    return extractReleaseYearFromLegacySources(firstRow.name, firstRow.info?.set_name);
+  }
+
+  return new Date().getFullYear();
+}
+
+function extractReleaseYearFromLegacySources(deckName: string, setName?: string): number {
   // First try to get year from deck name (most accurate for commander precons)
   const deckNameYear = extractReleaseYearFromDeckName(deckName);
   if (deckNameYear) {
@@ -461,6 +503,10 @@ function extractReleaseYear(deckName: string, setName?: string): number {
   
   // Default to current year if unknown
   return new Date().getFullYear();
+}
+
+function extractReleaseYear(deckName: string, setName?: string): number {
+  return extractReleaseYearFromLegacySources(deckName, setName);
 }
 
 function getProgressMessage(status: string, current: number, total: number): string {
