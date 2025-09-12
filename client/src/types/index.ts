@@ -15,6 +15,7 @@ export interface CSVRow {
     cmc?: number;
     type_line?: string;
     rarity?: string;
+    released_at?: string;
   };
 }
 
