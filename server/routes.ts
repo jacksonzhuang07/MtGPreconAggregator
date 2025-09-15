@@ -8,52 +8,10 @@ import * as path from 'path';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Scryfall API integration
-// Parse price data from CSV info.prices field
-function parsePriceFromCSV(pricesString?: string): number | null {
-  if (!pricesString) return null;
-  
-  try {
-    // The prices field is a string representation of a Python dictionary
-    // Convert it to a JavaScript object by replacing single quotes with double quotes
-    const jsonString = pricesString
-      .replace(/'/g, '"')
-      .replace(/True/g, 'true')
-      .replace(/False/g, 'false')
-      .replace(/None/g, 'null');
-    
-    const prices = JSON.parse(jsonString);
-    
-    // Prioritize USD price, fall back to other sources if needed
-    const parsePrice = (value: any): number | null => {
-      if (typeof value === 'number') return value;
-      if (typeof value === 'string' && !isNaN(parseFloat(value))) return parseFloat(value);
-      return null;
-    };
-    
-    const usdPrice = parsePrice(prices.usd);
-    if (usdPrice !== null) {
-      return usdPrice;
-    }
-    
-    // Fallback to other price sources if USD not available
-    const fallbackSources = ['ck', 'scg', 'ct', 'csi'];
-    for (const source of fallbackSources) {
-      const price = parsePrice(prices[source]);
-      if (price !== null) {
-        return price;
-      }
-    }
-    
-    return null;
-  } catch (error) {
-    console.error(`Error parsing price data: ${pricesString}`, error);
-    return null;
-  }
-}
+// Scryfall API integration - ONLY uses real-time Scryfall prices
 
-async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: string, csvPrices?: string, useRealTimePrice: boolean = false): Promise<number | null> {
-  // ALWAYS use Scryfall API - never use CSV prices anymore
+async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: string): Promise<number | null> {
+  // ALWAYS use Scryfall API - never use cached CSV prices
   console.log(`Always using real-time pricing for ${cardName}, fetching from Scryfall API`);
   try {
     await sleep(100); // Rate limiting - Scryfall recommends 50-100ms delays
@@ -145,9 +103,7 @@ async function updateDeckPricesRealTime(deckId: string, storage: IStorage): Prom
       const realTimePrice = await fetchCardPrice(
         card.name, 
         card.setCode || undefined, 
-        card.scryfallId || undefined, 
-        undefined, // No CSV prices for real-time
-        true // Force real-time pricing
+        card.scryfallId || undefined
       );
 
       if (realTimePrice !== null) {
@@ -397,9 +353,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const realTimePrice = await fetchCardPrice(
             deckCard.cardName, 
             card?.setCode, // setCode 
-            card?.scryfallId, // scryfallId - this is the key fix!
-            undefined, // csvPrices
-            true // Force real-time pricing
+            card?.scryfallId // scryfallId - this is the key fix!
           );
 
           if (realTimePrice !== null) {
@@ -490,9 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const realTimePrice = await fetchCardPrice(
             deckCard.cardName, 
             card?.setCode, 
-            card?.scryfallId, 
-            undefined, 
-            true // Always use real-time pricing
+            card?.scryfallId
           );
 
           const priceToUse = realTimePrice !== null ? realTimePrice : 0;
@@ -691,8 +643,8 @@ async function processCsvData(jobId: string, csvData: any[], selectedDecks?: str
         // Get CSV price data for this card
         const csvPriceData = cardPriceDataMap.get(cardKey);
         
-        // Fetch price using CSV data first, fallback to Scryfall if needed
-        const price = await fetchCardPrice(cardName, setCode || undefined, scryfallId || undefined, csvPriceData);
+        // Fetch price from Scryfall API only - NO CSV data
+        const price = await fetchCardPrice(cardName, setCode || undefined, scryfallId || undefined);
         
         // Create new card record with scryfall_id
         card = await storage.createCard({

@@ -23,7 +23,15 @@ export function CardBreakdown({ deckId, deckName, totalValue }: CardBreakdownPro
   useEffect(() => {
     if (isOpen && !deckDetails) {
       setIsLoading(true);
-      staticDataService.getDeckDetails(deckId)
+      // Use real-time API endpoint instead of cached static data
+      fetch(`/api/decks/${deckId}/details`)
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          } else {
+            throw new Error(`Failed to fetch deck details: ${response.statusText}`);
+          }
+        })
         .then(details => {
           if (details) {
             // Convert null fields to undefined for type compatibility
@@ -33,7 +41,7 @@ export function CardBreakdown({ deckId, deckName, totalValue }: CardBreakdownPro
                 ...details.deck,
                 commander: details.deck.commander || undefined
               },
-              cards: details.cards.map(card => ({
+              cards: details.cards.map((card: any) => ({
                 ...card,
                 setCode: card.setCode || undefined,
                 setName: card.setName || undefined,
@@ -47,7 +55,7 @@ export function CardBreakdown({ deckId, deckName, totalValue }: CardBreakdownPro
           setIsLoading(false);
         })
         .catch(error => {
-          console.error('Error loading deck details:', error);
+          console.error('Error loading deck details from real-time API:', error);
           setIsLoading(false);
         });
     }

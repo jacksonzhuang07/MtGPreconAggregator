@@ -132,7 +132,7 @@ export class StaticDataService {
     });
   }
 
-  // Get all available decks with basic info for selection
+  // Get all available decks with basic info for selection (NO CACHED PRICES)
   async getAvailableDecks(): Promise<Array<{
     id: string;
     name: string;
@@ -155,14 +155,16 @@ export class StaticDataService {
         commander: deck.commander,
         cardCount: deck.cardCount || 0,
         uniqueCardCount: deck.uniqueCardCount || 0,
-        totalValue: deck.totalValue || 0,
+        totalValue: 0, // NEVER use cached prices - always 0
         releaseYear: deck.releaseYear,
         setName: deck.setName
       }));
   }
 
-  // Get deck rankings with proper typing
+  // DEPRECATED: Get deck rankings with proper typing - NEVER USE CACHED PRICES
+  // This method is deprecated. Use the real-time API endpoint instead: GET /api/decks/:id/details
   async getDeckRankings(selectedDeckIds?: string[], limit = 50): Promise<DeckRanking[]> {
+    console.warn('DEPRECATED: getDeckRankings uses cached prices. Use real-time API endpoint instead.');
     await this.initialize();
     let decks = Array.from(this.decksMap.values());
     
@@ -171,10 +173,8 @@ export class StaticDataService {
       decks = decks.filter(deck => selectedDeckIds.includes(deck.id));
     }
     
-    // Sort by total value and create rankings
-    const sortedDecks = decks
-      .sort((a, b) => (b.totalValue || 0) - (a.totalValue || 0))
-      .slice(0, limit);
+    // NEVER use cached prices - return all decks with 0 value
+    const sortedDecks = decks.slice(0, limit);
 
     return sortedDecks.map((deck, index) => ({
       rank: index + 1,
@@ -183,19 +183,21 @@ export class StaticDataService {
         name: deck.name,
         format: this.normalizeFormat(deck.format),
         commander: deck.commander,
-        totalValue: deck.totalValue || 0,
+        totalValue: 0, // NEVER use cached prices
         cardCount: deck.cardCount || 0,
         uniqueCardCount: deck.uniqueCardCount || 0,
         publicUrl: deck.publicUrl,
         description: deck.description
       },
       cardCount: deck.cardCount || 0,
-      totalValue: deck.totalValue || 0
+      totalValue: 0 // NEVER use cached prices
     }));
   }
 
-  // Get analysis stats for selected decks
+  // DEPRECATED: Get analysis stats for selected decks - NEVER USE CACHED PRICES
+  // This method is deprecated. Use real-time computed stats instead.
   async getAnalysisStats(selectedDeckIds?: string[]): Promise<AnalysisStats> {
+    console.warn('DEPRECATED: getAnalysisStats uses cached prices. Use real-time computed stats instead.');
     await this.initialize();
     let decks = Array.from(this.decksMap.values());
     
@@ -203,14 +205,13 @@ export class StaticDataService {
       decks = decks.filter(deck => selectedDeckIds.includes(deck.id));
     }
     
-    const values = decks.map(d => d.totalValue || 0).filter(v => v > 0);
-    
+    // NEVER use cached prices - return stats with 0 values
     return {
       totalDecks: decks.length,
       uniqueCards: this.getUniqueCardsCount(decks),
-      avgPrice: values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0,
-      highestValue: values.length > 0 ? Math.max(...values) : 0,
-      lowestValue: values.length > 0 ? Math.min(...values) : 0
+      avgPrice: 0, // NEVER use cached prices
+      highestValue: 0, // NEVER use cached prices
+      lowestValue: 0 // NEVER use cached prices
     };
   }
 
@@ -256,8 +257,10 @@ export class StaticDataService {
     }
   }
 
-  // Get deck details with card breakdown
+  // DEPRECATED: Get deck details with card breakdown - NEVER USE CACHED PRICES
+  // This method is deprecated. Use the real-time API endpoint instead: GET /api/decks/:id/details
   async getDeckDetails(deckId: string) {
+    console.warn('DEPRECATED: getDeckDetails uses cached prices. Use real-time API endpoint: GET /api/decks/:id/details');
     await this.initialize();
     const deck = this.decksMap.get(deckId);
     if (!deck) return null;
@@ -270,13 +273,13 @@ export class StaticDataService {
         setName: card?.setName || null,
         quantity: deckCard.quantity,
         finish: deckCard.finish,
-        priceUsd: deckCard.priceUsd || 0,
-        totalPrice: deckCard.totalPrice,
+        priceUsd: 0, // NEVER use cached prices
+        totalPrice: 0, // NEVER use cached prices
         manaCost: card?.manaCost || null,
         type: card?.type || null,
         rarity: card?.rarity || null
       };
-    }).sort((a, b) => b.totalPrice - a.totalPrice);
+    }); // No sorting by price since all prices are 0
 
     return {
       deck: {
@@ -284,7 +287,7 @@ export class StaticDataService {
         name: deck.name,
         format: this.normalizeFormat(deck.format),
         commander: deck.commander,
-        totalValue: deck.totalValue || 0,
+        totalValue: 0, // NEVER use cached prices
         cardCount: deck.cardCount || 0,
         uniqueCardCount: deck.uniqueCardCount || 0
       },

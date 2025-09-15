@@ -322,7 +322,7 @@ export default function StaticHome() {
               if (details) {
                 const csvContent = [
                   ['Card Name', 'Set', 'Quantity', 'Price', 'Total', 'Type', 'Rarity'].join(','),
-                  ...details.cards.map(card => [
+                  ...details.cards.map((card: any) => [
                     `"${card.name}"`,
                     card.setCode || '',
                     card.quantity,
