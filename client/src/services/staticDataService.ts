@@ -145,17 +145,20 @@ export class StaticDataService {
     setName: string;
   }>> {
     await this.initialize();
-    return Array.from(this.decksMap.values()).map(deck => ({
-      id: deck.id,
-      name: deck.name,
-      format: this.normalizeFormat(deck.format),
-      commander: deck.commander,
-      cardCount: deck.cardCount || 0,
-      uniqueCardCount: deck.uniqueCardCount || 0,
-      totalValue: deck.totalValue || 0,
-      releaseYear: deck.releaseYear,
-      setName: deck.setName
-    }));
+    // Filter to only include actual precon decks
+    return Array.from(this.decksMap.values())
+      .filter(deck => deck.name && deck.name.includes('Precon'))
+      .map(deck => ({
+        id: deck.id,
+        name: deck.name,
+        format: this.normalizeFormat(deck.format),
+        commander: deck.commander,
+        cardCount: deck.cardCount || 0,
+        uniqueCardCount: deck.uniqueCardCount || 0,
+        totalValue: deck.totalValue || 0,
+        releaseYear: deck.releaseYear,
+        setName: deck.setName
+      }));
   }
 
   // Get deck rankings with proper typing
@@ -250,7 +253,24 @@ export class StaticDataService {
   // Get metadata about the dataset
   async getMetadata() {
     await this.initialize();
-    return this.data?.metadata || null;
+    
+    // Calculate actual unique precon deck count
+    const uniquePreconNames = new Set();
+    this.decksMap.forEach((deck) => {
+      if (deck.name && deck.name.includes('Precon')) {
+        uniquePreconNames.add(deck.name);
+      }
+    });
+    
+    return {
+      ...(this.data?.metadata || {}),
+      totalDecks: uniquePreconNames.size,
+      totalCards: this.cardsMap.size,
+      actualPreconDecks: uniquePreconNames.size,
+      generatedAt: this.data?.metadata?.generatedAt || new Date().toISOString(),
+      totalProcessedRows: this.data?.metadata?.totalProcessedRows || 0,
+      source: this.data?.metadata?.source || 'static-data'
+    };
   }
 
   // Get format distribution for filtering
