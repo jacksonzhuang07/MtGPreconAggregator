@@ -394,19 +394,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let successCount = 0;
       let failCount = 0;
 
-      // Process a subset of cards for demonstration (first 5 cards to avoid long delays)
-      const cardsToUpdate = deck.cards ? deck.cards.slice(0, 5) : [];
+      // Process more cards to get better price coverage (first 20 cards)
+      const cardsToUpdate = deck.cards ? deck.cards.slice(0, 20) : [];
       
       for (const deckCard of cardsToUpdate) {
         try {
           const oldPrice = deckCard.priceUsd || 0;
           oldTotalValue += oldPrice * (deckCard.quantity || 1);
 
-          // Fetch real-time price from Scryfall
+          // Find the card in static data to get its Scryfall ID
+          const card = staticData.cards?.find((c: any) => c.id === deckCard.cardId);
+          
+          // Fetch real-time price from Scryfall using the stored Scryfall ID
           const realTimePrice = await fetchCardPrice(
             deckCard.cardName, 
-            undefined, // setCode 
-            undefined, // scryfallId
+            card?.setCode, // setCode 
+            card?.scryfallId, // scryfallId - this is the key fix!
             undefined, // csvPrices
             true // Force real-time pricing
           );
