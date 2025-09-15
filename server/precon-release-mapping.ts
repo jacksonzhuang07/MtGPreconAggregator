@@ -72,6 +72,12 @@ export const PRECON_RELEASE_MAPPING: Record<string, number> = {
   
   // Secret Lair
   "Secret Lair Commander": 2021, // Use earliest date for Secret Lair series
+  "Secret Lair Commander 2023": 2023,
+  "Secret Lair Commander 2022": 2022,
+  "Secret Lair Commander 2024": 2024,
+  
+  // Final Fantasy 
+  "Final Fantasy Commander": 2025, // June 13, 2025 release
 };
 
 // Additional patterns that might appear in deck names
@@ -104,6 +110,10 @@ export const DECK_NAME_PATTERNS: Array<{ pattern: RegExp; year: number }> = [
   { pattern: /Duskmourn.*Commander/i, year: 2024 },
   { pattern: /Tarkir.*Dragonstorm.*Commander/i, year: 2025 },
   { pattern: /Aetherdrift.*Commander/i, year: 2025 },
+  { pattern: /Final Fantasy.*Commander/i, year: 2025 },
+  { pattern: /Secret Lair Commander 2023/i, year: 2023 },
+  { pattern: /Secret Lair Commander 2022/i, year: 2022 },
+  { pattern: /Secret Lair Commander 2024/i, year: 2024 },
 ];
 
 export function extractReleaseYearFromDeckName(deckName: string): number | null {
