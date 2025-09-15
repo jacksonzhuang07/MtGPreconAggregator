@@ -17,15 +17,13 @@ if (parsed.errors.length > 0) {
   process.exit(1);
 }
 
-// Filter for Abzan Armor deck only
-const abzanArmorRows = parsed.data.filter(row => 
-  row.name === 'Abzan Armor (Tarkir Dragonstorm Commander Precon Decklist)'
-);
+// Get all rows from all decks
+const allRows = parsed.data;
 
-console.log(`Found ${abzanArmorRows.length} cards in Abzan Armor deck`);
+console.log(`Found ${allRows.length} total cards from all decks`);
 
 // Transform to the format needed by the server
-const processedData = abzanArmorRows
+const processedData = allRows
   .filter(row => row.name && row['info.name']) // Filter out invalid rows
   .map(row => ({
     id: row.id || '',
@@ -51,21 +49,63 @@ const processedData = abzanArmorRows
 
 console.log(`Processed ${processedData.length} valid cards`);
 
-// Create deck metadata
-const deckMetadata = {
-  name: 'Abzan Armor (Tarkir Dragonstorm Commander Precon Decklist)',
-  format: 'commanderPrecons',
-  setName: 'Tarkir: Dragonstorm Commander',
-  commander: 'Betor, Ancestor\'s Voice',
-  releaseYear: 2025,
-  cardCount: processedData.length,
-  publicUrl: abzanArmorRows[0]?.publicUrl,
-  description: abzanArmorRows[0]?.description,
-};
+// Create deck metadata from unique deck names
+const uniqueDecks = [...new Set(processedData.map(row => row.name))];
+const deckMetadata = uniqueDecks.map(deckName => {
+  const deckRows = processedData.filter(row => row.name === deckName);
+  const firstRow = deckRows[0];
+  
+  return {
+    name: deckName,
+    format: firstRow.format || 'commanderPrecons',
+    setName: extractSetName(deckName),
+    commander: extractCommander(deckName, deckRows),
+    releaseYear: extractReleaseYear(firstRow.info.released_at) || 2025,
+    cardCount: deckRows.length,
+    publicUrl: firstRow.publicUrl,
+    description: firstRow.description,
+  };
+});
+
+console.log(`Created metadata for ${deckMetadata.length} unique decks`);
+
+// Helper functions to extract deck information
+function extractSetName(deckName) {
+  // Extract set name from parentheses, e.g., "Deck Name (Set Name)" -> "Set Name"
+  const match = deckName.match(/\(([^)]+)\)/);
+  if (match) {
+    return match[1].replace(/Commander.*$/i, '').trim();
+  }
+  return 'Unknown Set';
+}
+
+function extractCommander(deckName, deckRows) {
+  // Try to find the commander by looking for legendary creatures
+  const legendaryCreatures = deckRows.filter(row => 
+    row.info.type_line?.includes('Legendary') && row.info.type_line?.includes('Creature')
+  );
+  
+  if (legendaryCreatures.length > 0) {
+    return legendaryCreatures[0].info.name;
+  }
+  
+  // Fallback: extract from deck name if it follows a pattern
+  return 'Unknown Commander';
+}
+
+function extractReleaseYear(releasedAt) {
+  if (releasedAt) {
+    const year = parseInt(releasedAt.split('-')[0]);
+    if (year && year > 1990 && year <= new Date().getFullYear() + 2) {
+      return year;
+    }
+  }
+  return null;
+}
 
 // Create the final data structure
 const embeddedData = {
-  decks: [deckMetadata],
+  decks: deckMetadata,
   rows: processedData
 };
 
