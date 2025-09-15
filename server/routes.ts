@@ -53,20 +53,8 @@ function parsePriceFromCSV(pricesString?: string): number | null {
 }
 
 async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: string, csvPrices?: string, useRealTimePrice: boolean = false): Promise<number | null> {
-  // If real-time pricing is requested, always use Scryfall API first
-  if (useRealTimePrice) {
-    console.log(`Using real-time pricing for ${cardName}, fetching from Scryfall API`);
-  } else {
-    // First try to get price from CSV data for backward compatibility
-    const csvPrice = parsePriceFromCSV(csvPrices);
-    if (csvPrice !== null) {
-      console.log(`Using CSV price for ${cardName}: $${csvPrice}`);
-      return csvPrice;
-    }
-    
-    // Fallback to Scryfall API if no CSV price available
-    console.log(`No CSV price for ${cardName}, falling back to Scryfall API`);
-  }
+  // ALWAYS use Scryfall API - never use CSV prices anymore
+  console.log(`Always using real-time pricing for ${cardName}, fetching from Scryfall API`);
   try {
     await sleep(100); // Rate limiting - Scryfall recommends 50-100ms delays
     
@@ -394,8 +382,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let successCount = 0;
       let failCount = 0;
 
-      // Process more cards to get better price coverage (first 20 cards)
-      const cardsToUpdate = deck.cards ? deck.cards.slice(0, 20) : [];
+      // Process ALL cards to ensure complete accuracy
+      const cardsToUpdate = deck.cards ? deck.cards : [];
       
       for (const deckCard of cardsToUpdate) {
         try {
@@ -440,16 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // For remaining cards, use existing prices
-      if (deck.cards && deck.cards.length > 5) {
-        for (let i = 5; i < deck.cards.length; i++) {
-          const deckCard = deck.cards[i];
-          const price = deckCard.priceUsd || 0;
-          const quantity = deckCard.quantity || 1;
-          oldTotalValue += price * quantity;
-          newTotalValue += price * quantity;
-        }
-      }
+      // No need for remaining cards loop - we process ALL cards now
 
       const result = {
         oldTotalValue,
@@ -474,46 +453,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get deck details with card breakdown
+  // Get deck details with real-time Scryfall prices
   app.get("/api/decks/:deckId/details", async (req, res) => {
     try {
       const { deckId } = req.params;
-      const deckDetails = await storage.getPreconDeckWithDetails(deckId);
       
-      if (!deckDetails) {
+      console.log(`Fetching deck details with real-time prices for: ${deckId}`);
+
+      // Load static data to get deck structure and Scryfall IDs
+      const staticDataPath = path.join(process.cwd(), 'shared', 'static-precon-data.json');
+      let staticData;
+      
+      try {
+        const fileContent = fs.readFileSync(staticDataPath, 'utf-8');
+        staticData = JSON.parse(fileContent);
+      } catch (error) {
+        console.error('Failed to read static data file:', error);
+        throw new Error('Failed to load static data from filesystem');
+      }
+      
+      const deck = staticData.decks.find((d: any) => d.id === deckId);
+      if (!deck) {
         return res.status(404).json({ error: "Deck not found" });
       }
 
-      // Format the response to include card breakdown with pricing
-      const cardBreakdown = deckDetails.cards.map(deckCard => {
-        const quantity = deckCard.quantity || 1;
-        const priceUsd = deckCard.card.priceUsd || 0;
-        return {
-          name: deckCard.card.name,
-          setCode: deckCard.card.setCode,
-          setName: deckCard.card.setName,
-          quantity,
-          finish: deckCard.finish || 'nonFoil',
-          priceUsd,
-          totalPrice: priceUsd * quantity,
-          manaCost: deckCard.card.manaCost,
-          type: deckCard.card.type,
-          rarity: deckCard.card.rarity,
-        };
-      }).sort((a, b) => b.totalPrice - a.totalPrice); // Sort by total price descending
+      // Fetch real-time prices for all cards in the deck
+      const cardsWithRealPrices = [];
+      let totalValue = 0;
 
-      res.json({
+      for (const deckCard of deck.cards || []) {
+        try {
+          // Find the card in static data to get its Scryfall ID
+          const card = staticData.cards?.find((c: any) => c.id === deckCard.cardId);
+          
+          // Fetch real-time price from Scryfall using the stored Scryfall ID
+          const realTimePrice = await fetchCardPrice(
+            deckCard.cardName, 
+            card?.setCode, 
+            card?.scryfallId, 
+            undefined, 
+            true // Always use real-time pricing
+          );
+
+          const priceToUse = realTimePrice !== null ? realTimePrice : 0;
+          const quantity = deckCard.quantity || 1;
+          const totalCardPrice = priceToUse * quantity;
+          totalValue += totalCardPrice;
+
+          cardsWithRealPrices.push({
+            name: deckCard.cardName,
+            setCode: card?.setCode || null,
+            setName: card?.setName || null,
+            quantity: quantity,
+            finish: deckCard.finish,
+            priceUsd: priceToUse, // Real-time price from Scryfall
+            totalPrice: totalCardPrice,
+            manaCost: card?.manaCost || null,
+            cmc: card?.cmc || null,
+            type: card?.type || null,
+            rarity: card?.rarity || null,
+            scryfallId: card?.scryfallId || null
+          });
+
+          // Rate limiting
+          await sleep(50); // Slightly faster for card breakdowns
+        } catch (error) {
+          console.error(`Error fetching price for ${deckCard.cardName}:`, error);
+          // Use fallback price of 0 if fetch fails
+          const quantity = deckCard.quantity || 1;
+          cardsWithRealPrices.push({
+            name: deckCard.cardName,
+            setCode: null,
+            setName: null,
+            quantity: quantity,
+            finish: deckCard.finish,
+            priceUsd: 0,
+            totalPrice: 0,
+            manaCost: null,
+            cmc: null,
+            type: null,
+            rarity: null,
+            scryfallId: null
+          });
+        }
+      }
+
+      // Sort by total price descending
+      cardsWithRealPrices.sort((a, b) => b.totalPrice - a.totalPrice);
+
+      const response = {
         deck: {
-          id: deckDetails.id,
-          name: deckDetails.name,
-          format: deckDetails.format,
-          commander: deckDetails.commander,
-          totalValue: deckDetails.totalValue,
-          cardCount: deckDetails.cardCount,
-          uniqueCardCount: deckDetails.uniqueCardCount,
+          id: deck.id,
+          name: deck.name,
+          format: deck.format,
+          commander: deck.commander,
+          totalValue: totalValue,
+          cardCount: deck.cards?.length || 0,
+          uniqueCardCount: cardsWithRealPrices.length,
         },
-        cards: cardBreakdown,
-      });
+        cards: cardsWithRealPrices,
+      };
+
+      console.log(`Deck details fetched for ${deckId}: ${cardsWithRealPrices.length} cards, total value: $${totalValue.toFixed(2)}`);
+
+      res.json(response);
     } catch (error) {
       console.error("Error getting deck details:", error);
       res.status(500).json({ error: "Failed to get deck details" });
