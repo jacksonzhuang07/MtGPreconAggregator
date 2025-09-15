@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
 import { extractReleaseYearFromDeckName } from './precon-release-mapping';
-import { getAvailableDecks, getDeckRows, getTestDeckRows } from './embedded-data';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -100,26 +99,74 @@ async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: s
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get available precon decks from embedded data
-  app.get("/api/decks/parse", async (req, res) => {
+  // Parse CSV and extract deck information without analyzing
+  app.post("/api/decks/parse", async (req, res) => {
     try {
-      // Disable caching to prevent 304 responses that frontend treats as errors
-      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-      res.set('Pragma', 'no-cache');
-      res.set('Expires', '0');
+      const { csvData } = req.body;
+      if (!csvData || !Array.isArray(csvData)) {
+        return res.status(400).json({ error: "Invalid CSV data" });
+      }
+
+      // First, group all rows by deck name to calculate release years from CSV data
+      const deckRowsMap = new Map<string, any[]>();
       
-      const decks = getAvailableDecks();
-      console.log(`✓ Returning ${decks.length} available deck(s)`);
-      res.json({ decks });
+      for (const row of csvData) {
+        if (!row.name || !row.info?.name) continue;
+        
+        const deckId = row.name;
+        if (!deckRowsMap.has(deckId)) {
+          deckRowsMap.set(deckId, []);
+        }
+        deckRowsMap.get(deckId)!.push(row);
+      }
+
+      // Extract unique deck information using CSV release dates
+      const deckMap = new Map<string, any>();
+      
+      for (const [deckId, rows] of Array.from(deckRowsMap.entries())) {
+        const firstRow = rows[0];
+        const setName = firstRow.info.set_name || "Unknown Set";
+        const releaseYear = getDeckReleaseYear(rows);
+        
+        deckMap.set(deckId, {
+          id: deckId,
+          name: deckId,
+          setName,
+          releaseYear,
+          format: firstRow.format || "unknown",
+          commander: extractCommander(deckId),
+          cardCount: 0,
+          uniqueCards: new Set(),
+        });
+        
+        // Add cards from all rows for this deck
+        for (const row of rows) {
+          const deck = deckMap.get(deckId)!;
+          deck.cardCount += (row.quantity || 1);
+          deck.uniqueCards.add(row.info.name);
+        }
+      }
+      
+      // Convert to array and add unique card counts
+      const decks = Array.from(deckMap.values()).map(deck => ({
+        ...deck,
+        uniqueCardCount: deck.uniqueCards.size,
+        uniqueCards: undefined, // Remove Set object for serialization
+      }));
+      
+      res.json(decks);
     } catch (error) {
-      console.error("Error loading embedded decks:", error);
-      res.status(500).json({ error: "Failed to load precon deck data" });
+      console.error("Error parsing decks:", error);
+      res.status(500).json({ error: "Failed to parse decks" });
     }
   });
-  // Start price analysis job with selected decks from embedded data
+  // Start price analysis job with selected decks
   app.post("/api/analysis/start", async (req, res) => {
     try {
-      const { selectedDecks, testDeck } = req.body;
+      const { csvData, selectedDecks } = req.body;
+      if (!csvData || !Array.isArray(csvData)) {
+        return res.status(400).json({ error: "Invalid CSV data" });
+      }
 
       // Create analysis job
       const job = await storage.createAnalysisJob({
@@ -129,15 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errorMessage: null,
       });
 
-      // Get embedded data rows, filtered by selection or use test deck
-      let csvData;
-      if (testDeck) {
-        csvData = getTestDeckRows(testDeck);
-      } else {
-        csvData = getDeckRows(selectedDecks);
-      }
-
-      // Process embedded CSV data in background with selected decks filter
+      // Process CSV data in background with selected decks filter
       processCsvData(job.id, csvData, selectedDecks);
 
       res.json({ jobId: job.id });

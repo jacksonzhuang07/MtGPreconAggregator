@@ -9,32 +9,19 @@ export const useDeckSelection = () => {
   const [isParsing, setIsParsing] = useState(false);
   const { toast } = useToast();
 
-  // Load embedded decks mutation
-  const loadDecksMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/decks/parse', {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
-      // Handle 304 responses (cache hits) as successful
-      if (!response.ok && response.status !== 304) {
-        throw new Error('Failed to load embedded deck data');
-      }
-      const data = await response.json();
-      return data.decks;
-    },
+  // Parse decks mutation
+  const parseDecksMutation = useMutation({
+    mutationFn: parseDecks,
     onSuccess: (decks: DeckInfo[]) => {
       setAvailableDecks(decks);
       toast({
-        title: "Decks loaded successfully",
-        description: `Found ${decks.length} precon deck(s) ready for analysis.`,
+        title: "Decks parsed successfully",
+        description: `Found ${decks.length} unique commander decks. Select the ones you want to analyze.`,
       });
     },
     onError: (error) => {
       toast({
-        title: "Failed to load decks",
+        title: "Failed to parse decks",
         description: error instanceof Error ? error.message : "Unknown error occurred",
         variant: "destructive",
       });
@@ -43,13 +30,9 @@ export const useDeckSelection = () => {
 
   const parseDecksFromCsv = useCallback((csvData: CSVRow[]) => {
     setIsParsing(true);
-    // Legacy function for backwards compatibility - not used with embedded data
+    parseDecksMutation.mutate(csvData);
     setIsParsing(false);
-  }, []);
-
-  const loadEmbeddedDecks = useCallback(() => {
-    loadDecksMutation.mutate();
-  }, [loadDecksMutation]);
+  }, [parseDecksMutation]);
 
   const clearDecks = useCallback(() => {
     setAvailableDecks([]);
@@ -58,11 +41,10 @@ export const useDeckSelection = () => {
   return {
     // State
     availableDecks,
-    isParsing: isParsing || loadDecksMutation.isPending,
+    isParsing: isParsing || parseDecksMutation.isPending,
     
     // Actions
-    parseDecksFromCsv, // Legacy compatibility
-    loadEmbeddedDecks,
+    parseDecksFromCsv,
     clearDecks,
     
     // Computed
