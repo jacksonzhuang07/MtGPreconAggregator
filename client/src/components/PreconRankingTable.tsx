@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import {
   Table,
   TableBody,
@@ -10,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Eye, Download, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Download, Info, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { CardBreakdown } from '@/components/CardBreakdown';
 import type { DeckRanking } from '@/types';
 
@@ -18,15 +21,49 @@ interface PreconRankingTableProps {
   rankings: DeckRanking[];
   onViewDeck?: (deckId: string) => void;
   onExportDeck?: (deckId: string) => void;
+  onDeckUpdated?: () => void;
 }
 
 export function PreconRankingTable({ 
   rankings, 
   onViewDeck, 
-  onExportDeck 
+  onExportDeck,
+  onDeckUpdated
 }: PreconRankingTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [updatingDeckId, setUpdatingDeckId] = useState<string | null>(null);
   const itemsPerPage = 10;
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const updatePricesMutation = useMutation({
+    mutationFn: async (deckId: string) => {
+      const response = await apiRequest('POST', '/api/cards/update-prices', { deckId });
+      return response.json();
+    },
+    onSuccess: (data, deckId) => {
+      toast({
+        title: "Prices Updated Successfully",
+        description: `Updated ${data.updatedCards} cards. New total: $${data.newTotalValue.toFixed(2)}`,
+      });
+      setUpdatingDeckId(null);
+      onDeckUpdated?.();
+    },
+    onError: (error, deckId) => {
+      console.error('Failed to update prices:', error);
+      toast({
+        title: "Price Update Failed",
+        description: "Failed to fetch real-time prices from Scryfall API. Please try again.",
+        variant: "destructive",
+      });
+      setUpdatingDeckId(null);
+    },
+  });
+
+  const handleUpdatePrices = async (deckId: string) => {
+    setUpdatingDeckId(deckId);
+    updatePricesMutation.mutate(deckId);
+  };
   
   const totalPages = Math.ceil(rankings.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -156,6 +193,16 @@ export function PreconRankingTable({
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleUpdatePrices(ranking.deck.id)}
+                        disabled={updatingDeckId === ranking.deck.id}
+                        data-testid={`button-update-prices-${ranking.deck.id}`}
+                        title="Update prices from Scryfall API"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${updatingDeckId === ranking.deck.id ? 'animate-spin' : ''}`} />
+                      </Button>
                       <CardBreakdown
                         deckId={ranking.deck.id}
                         deckName={ranking.deck.name}

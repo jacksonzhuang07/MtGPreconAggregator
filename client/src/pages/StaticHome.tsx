@@ -303,6 +303,10 @@ export default function StaticHome() {
         {hasData && filteredRankings.length > 0 && (
           <PreconRankingTable 
             rankings={filteredRankings}
+            onDeckUpdated={() => {
+              // Refresh the rankings data after price updates by re-running analysis
+              window.location.reload();
+            }}
             onViewDeck={async (deckId) => {
               const details = await getDeckDetails(deckId);
               if (details) {

@@ -1,8 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, type IStorage } from "./storage";
 import { z } from "zod";
 import { extractReleaseYearFromDeckName } from './precon-release-mapping';
+import * as fs from 'fs';
+import * as path from 'path';
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -50,16 +52,21 @@ function parsePriceFromCSV(pricesString?: string): number | null {
   }
 }
 
-async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: string, csvPrices?: string): Promise<number | null> {
-  // First try to get price from CSV data
-  const csvPrice = parsePriceFromCSV(csvPrices);
-  if (csvPrice !== null) {
-    console.log(`Using CSV price for ${cardName}: $${csvPrice}`);
-    return csvPrice;
+async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: string, csvPrices?: string, useRealTimePrice: boolean = false): Promise<number | null> {
+  // If real-time pricing is requested, always use Scryfall API first
+  if (useRealTimePrice) {
+    console.log(`Using real-time pricing for ${cardName}, fetching from Scryfall API`);
+  } else {
+    // First try to get price from CSV data for backward compatibility
+    const csvPrice = parsePriceFromCSV(csvPrices);
+    if (csvPrice !== null) {
+      console.log(`Using CSV price for ${cardName}: $${csvPrice}`);
+      return csvPrice;
+    }
+    
+    // Fallback to Scryfall API if no CSV price available
+    console.log(`No CSV price for ${cardName}, falling back to Scryfall API`);
   }
-  
-  // Fallback to Scryfall API if no CSV price available
-  console.log(`No CSV price for ${cardName}, falling back to Scryfall API`);
   try {
     await sleep(100); // Rate limiting - Scryfall recommends 50-100ms delays
     
@@ -96,6 +103,107 @@ async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: s
     console.error(`Error fetching price for ${cardName} (ID: ${scryfallId}):`, error);
     return null;
   }
+}
+
+async function updateDeckPricesRealTime(deckId: string, storage: IStorage): Promise<{
+  oldTotalValue: number;
+  newTotalValue: number;
+  updatedCards: number;
+  failedCards: number;
+  updateResults: Array<{
+    cardName: string;
+    oldPrice: number | null;
+    newPrice: number;
+    difference: number;
+  }>;
+}> {
+  // Get all cards for this deck
+  const deckCards = await storage.getDeckCards(deckId);
+  if (!deckCards.length) {
+    throw new Error("Deck not found");
+  }
+
+  const updateResults = [];
+  let successCount = 0;
+  let failCount = 0;
+  let oldTotalValue = 0;
+
+  console.log(`Starting real-time price update for deck ${deckId} with ${deckCards.length} unique cards`);
+
+  for (const deckCard of deckCards) {
+    try {
+      const card = await storage.getCard(deckCard.cardId);
+      if (!card) {
+        console.warn(`Card not found in storage: ${deckCard.cardId}`);
+        failCount++;
+        continue;
+      }
+
+      // Track old price for comparison
+      const oldPrice = card.priceUsd || 0;
+      const quantity = deckCard.quantity || 1;
+      oldTotalValue += oldPrice * quantity;
+
+      // Fetch real-time price from Scryfall
+      const realTimePrice = await fetchCardPrice(
+        card.name, 
+        card.setCode || undefined, 
+        card.scryfallId || undefined, 
+        undefined, // No CSV prices for real-time
+        true // Force real-time pricing
+      );
+
+      if (realTimePrice !== null) {
+        // Update the card price in storage
+        const updatedCard = await storage.updateCardPrice(card.id, realTimePrice);
+        if (updatedCard) {
+          updateResults.push({
+            cardName: card.name,
+            oldPrice: oldPrice,
+            newPrice: realTimePrice,
+            difference: realTimePrice - oldPrice
+          });
+          successCount++;
+        }
+      } else {
+        console.warn(`Failed to fetch real-time price for ${card.name}`);
+        failCount++;
+      }
+
+      // Rate limiting: 100ms delay between requests
+      await sleep(100);
+    } catch (error) {
+      console.error(`Error updating price for card ${deckCard.cardId}:`, error);
+      failCount++;
+    }
+  }
+
+  // Recalculate deck total value after price updates
+  const updatedDeckCards = await storage.getDeckCards(deckId);
+  let newTotalValue = 0;
+  let cardCount = 0;
+
+  for (const deckCard of updatedDeckCards) {
+    const card = await storage.getCard(deckCard.cardId);
+    if (card && card.priceUsd) {
+      const quantity = deckCard.quantity || 1;
+      newTotalValue += card.priceUsd * quantity;
+      cardCount += quantity;
+    }
+  }
+
+  // Update deck with new total value
+  await storage.updateDeckValue(deckId, newTotalValue, cardCount, updatedDeckCards.length);
+
+  console.log(`Price update completed for deck ${deckId}: ${successCount} success, ${failCount} failed`);
+
+  return {
+    oldTotalValue,
+    newTotalValue,
+    updatedCards: successCount,
+    failedCards: failCount,
+    updateResults: updateResults.slice(0, 10) // Limit response size, show first 10 changes
+  };
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -236,6 +344,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting stats:", error);
       res.status(500).json({ error: "Failed to get stats" });
+    }
+  });
+
+  // New endpoint for real-time price updates (for static data)
+  app.post("/api/cards/update-prices", async (req, res) => {
+    try {
+      const { deckId } = req.body;
+      
+      if (!deckId) {
+        return res.status(400).json({ error: "Deck ID is required" });
+      }
+
+      console.log(`Starting price update for deck: ${deckId}`);
+
+      // Load static data and get deck from file system
+      const staticDataPath = path.join(process.cwd(), 'shared', 'static-precon-data.json');
+      let staticData;
+      
+      try {
+        const fileContent = fs.readFileSync(staticDataPath, 'utf-8');
+        staticData = JSON.parse(fileContent);
+      } catch (error) {
+        console.error('Failed to read static data file:', error);
+        throw new Error('Failed to load static data from filesystem');
+      }
+      const deck = staticData.decks.find((d: any) => d.id === deckId);
+      
+      if (!deck) {
+        console.error(`Deck not found in static data: ${deckId}`);
+        return res.status(404).json({ error: "Deck not found" });
+      }
+
+      console.log(`Found deck: ${deck.name} with ${deck.cards?.length || 0} cards`);
+
+      // Actually fetch real prices from Scryfall for demonstration
+      const updateResults = [];
+      let oldTotalValue = 0;
+      let newTotalValue = 0;
+      let successCount = 0;
+      let failCount = 0;
+
+      // Process a subset of cards for demonstration (first 5 cards to avoid long delays)
+      const cardsToUpdate = deck.cards ? deck.cards.slice(0, 5) : [];
+      
+      for (const deckCard of cardsToUpdate) {
+        try {
+          const oldPrice = deckCard.priceUsd || 0;
+          oldTotalValue += oldPrice * (deckCard.quantity || 1);
+
+          // Fetch real-time price from Scryfall
+          const realTimePrice = await fetchCardPrice(
+            deckCard.cardName, 
+            undefined, // setCode 
+            undefined, // scryfallId
+            undefined, // csvPrices
+            true // Force real-time pricing
+          );
+
+          if (realTimePrice !== null) {
+            const quantity = deckCard.quantity || 1;
+            newTotalValue += realTimePrice * quantity;
+            
+            updateResults.push({
+              cardName: deckCard.cardName,
+              oldPrice: oldPrice,
+              newPrice: realTimePrice,
+              difference: realTimePrice - oldPrice
+            });
+            successCount++;
+          } else {
+            // Keep old price if fetch failed
+            newTotalValue += oldPrice * (deckCard.quantity || 1);
+            failCount++;
+          }
+
+          // Rate limiting
+          await sleep(100);
+        } catch (error) {
+          console.error(`Error updating price for ${deckCard.cardName}:`, error);
+          newTotalValue += (deckCard.priceUsd || 0) * (deckCard.quantity || 1);
+          failCount++;
+        }
+      }
+
+      // For remaining cards, use existing prices
+      if (deck.cards && deck.cards.length > 5) {
+        for (let i = 5; i < deck.cards.length; i++) {
+          const deckCard = deck.cards[i];
+          const price = deckCard.priceUsd || 0;
+          const quantity = deckCard.quantity || 1;
+          oldTotalValue += price * quantity;
+          newTotalValue += price * quantity;
+        }
+      }
+
+      const result = {
+        oldTotalValue,
+        newTotalValue,
+        updatedCards: successCount,
+        failedCards: failCount,
+        updateResults: updateResults.slice(0, 3) // Show first 3 changes
+      };
+
+      console.log(`Real-time price update completed for deck ${deckId}: ${successCount} updated, ${failCount} failed`);
+
+      res.json({
+        success: true,
+        deckId,
+        ...result
+      });
+
+    } catch (error) {
+      console.error("Error updating card prices:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update card prices";
+      res.status(500).json({ error: errorMessage });
     }
   });
 

@@ -214,6 +214,48 @@ export class StaticDataService {
     };
   }
 
+  // Update deck prices with real-time data from Scryfall API
+  async updateDeckPrices(deckId: string): Promise<{
+    success: boolean;
+    oldTotalValue: number;
+    newTotalValue: number;
+    updatedCards: number;
+    failedCards: number;
+    updateResults: Array<{
+      cardName: string;
+      oldPrice: number | null;
+      newPrice: number;
+      difference: number;
+    }>;
+  }> {
+    try {
+      const response = await fetch('/api/cards/update-prices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ deckId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update prices: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error updating deck prices:', error);
+      return {
+        success: false,
+        oldTotalValue: 0,
+        newTotalValue: 0,
+        updatedCards: 0,
+        failedCards: 0,
+        updateResults: []
+      };
+    }
+  }
+
   // Get deck details with card breakdown
   async getDeckDetails(deckId: string) {
     await this.initialize();
