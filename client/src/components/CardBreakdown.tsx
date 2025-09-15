@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -8,6 +7,7 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { staticDataService } from '@/services/staticDataService';
 import type { DeckDetails } from '@/types';
 
 interface CardBreakdownProps {
@@ -18,11 +18,40 @@ interface CardBreakdownProps {
 
 export function CardBreakdown({ deckId, deckName, totalValue }: CardBreakdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-
-  const { data: deckDetails, isLoading } = useQuery<DeckDetails>({
-    queryKey: ['/api/decks', deckId, 'details'],
-    enabled: isOpen, // Only fetch when expanded
-  });
+  const [deckDetails, setDeckDetails] = useState<DeckDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  useEffect(() => {
+    if (isOpen && !deckDetails) {
+      setIsLoading(true);
+      staticDataService.getDeckDetails(deckId)
+        .then(details => {
+          if (details) {
+            // Convert null fields to undefined for type compatibility
+            const convertedDetails = {
+              ...details,
+              deck: {
+                ...details.deck,
+                commander: details.deck.commander || undefined
+              },
+              cards: details.cards.map(card => ({
+                ...card,
+                setCode: card.setCode || undefined,
+                setName: card.setName || undefined,
+                manaCost: card.manaCost || undefined,
+                type: card.type || undefined,
+                rarity: card.rarity || undefined
+              }))
+            };
+            setDeckDetails(convertedDetails);
+          }
+          setIsLoading(false);
+        })
+        .catch(error => {
+          console.error('Error loading deck details:', error);
+          setIsLoading(false);
+        });
+    }
+  }, [isOpen, deckId, deckDetails]);
 
   const formatPrice = (price: number) => {
     return price > 0 ? `$${price.toFixed(2)}` : 'N/A';
