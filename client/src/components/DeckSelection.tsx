@@ -25,14 +25,20 @@ interface DeckSelectionProps {
 export function DeckSelection({ decks, onAnalyzeSelected, isAnalyzing }: DeckSelectionProps) {
   const [selectedDecks, setSelectedDecks] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
-  const [filterYear, setFilterYear] = useState<string>('all');
+  const [filterSet, setFilterSet] = useState<string>('all');
   const [filterFormat, setFilterFormat] = useState<string>('all');
 
-  // Get unique years and formats for filtering
-  const availableYears = useMemo(() => {
-    const uniqueYears = new Set(decks.map(deck => deck.releaseYear));
-    const years = Array.from(uniqueYears).sort((a, b) => b - a);
-    return years;
+  // Extract commander set from deck name (text in parentheses)
+  const extractCommanderSet = (deckName: string): string => {
+    const match = deckName.match(/\(([^)]+)\)/);
+    return match ? match[1] : 'Unknown';
+  };
+
+  // Get unique commander sets for filtering
+  const availableSets = useMemo(() => {
+    const uniqueSets = new Set(decks.map(deck => extractCommanderSet(deck.name)));
+    const sets = Array.from(uniqueSets).sort();
+    return sets;
   }, [decks]);
 
   const availableFormats = useMemo(() => {
@@ -48,12 +54,12 @@ export function DeckSelection({ decks, onAnalyzeSelected, isAnalyzing }: DeckSel
         deck.name.toLowerCase().includes(searchText.toLowerCase()) ||
         (deck.commander && deck.commander.toLowerCase().includes(searchText.toLowerCase()));
       
-      const matchesYear = filterYear === 'all' || deck.releaseYear.toString() === filterYear;
+      const matchesSet = filterSet === 'all' || extractCommanderSet(deck.name) === filterSet;
       const matchesFormat = filterFormat === 'all' || deck.format === filterFormat;
       
-      return matchesSearch && matchesYear && matchesFormat;
+      return matchesSearch && matchesSet && matchesFormat;
     });
-  }, [decks, searchText, filterYear, filterFormat]);
+  }, [decks, searchText, filterSet, filterFormat]);
 
   const handleSelectAll = () => {
     if (selectedDecks.length === filteredDecks.length) {
@@ -120,16 +126,16 @@ export function DeckSelection({ decks, onAnalyzeSelected, isAnalyzing }: DeckSel
           </div>
           
           <div>
-            <Label htmlFor="filter-year">Release Year</Label>
-            <Select value={filterYear} onValueChange={setFilterYear}>
-              <SelectTrigger className="w-40" data-testid="select-year">
-                <SelectValue placeholder="All Years" />
+            <Label htmlFor="filter-set">Commander Set</Label>
+            <Select value={filterSet} onValueChange={setFilterSet}>
+              <SelectTrigger className="w-60" data-testid="select-set">
+                <SelectValue placeholder="All Sets" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Years</SelectItem>
-                {availableYears.map(year => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
+                <SelectItem value="all">All Sets</SelectItem>
+                {availableSets.map(set => (
+                  <SelectItem key={set} value={set}>
+                    {set}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -214,8 +220,7 @@ export function DeckSelection({ decks, onAnalyzeSelected, isAnalyzing }: DeckSel
                   </div>
                   
                   <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                    <span>Set: {deck.setName}</span>
-                    <span>Year: {deck.releaseYear}</span>
+                    <span>Set: {extractCommanderSet(deck.name)}</span>
                     <span>{deck.cardCount} cards</span>
                     {deck.commander && <span>Commander: {deck.commander}</span>}
                   </div>
