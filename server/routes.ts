@@ -95,9 +95,18 @@ async function fetchCardPrice(cardName: string, setCode?: string, scryfallId?: s
     }
     
     const data = await response.json();
-    const price = data.prices?.usd;
+    
+    // Try regular USD price first, then fall back to foil price if regular not available
+    let price = data.prices?.usd;
+    let priceType = 'regular';
+    
+    if (!price && data.prices?.usd_foil) {
+      price = data.prices.usd_foil;
+      priceType = 'foil';
+    }
+    
     const parsedPrice = price ? parseFloat(price) : null;
-    console.log(`Price for ${cardName}: ${parsedPrice || 'null'} (raw: ${price})`);
+    console.log(`Price for ${cardName}: ${parsedPrice || 'null'} (${priceType}, raw: ${price})`);
     return parsedPrice;
   } catch (error) {
     console.error(`Error fetching price for ${cardName} (ID: ${scryfallId}):`, error);
