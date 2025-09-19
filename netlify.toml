@@ -1,21 +1,27 @@
 [build]
-  publish = "dist/public"
+  publish = "dist"
   command = "npm run build"
   functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
 
-# API redirects to Netlify functions
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["shared/static-precon-data.json"]
+
+# API redirects to Netlify functions with proper deckId forwarding
 [[redirects]]
-  from = "/api/decks/*/details"
-  to = "/.netlify/functions/deck-details"
+  from = "/api/decks/:deckId/details"
+  to = "/.netlify/functions/deck-details?deckId=:deckId"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/api/cards/update-prices"
   to = "/.netlify/functions/update-prices"
   status = 200
+  force = true
 
 # SPA redirect (must be last)
 [[redirects]]

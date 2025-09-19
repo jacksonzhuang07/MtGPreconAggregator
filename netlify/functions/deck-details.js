@@ -70,15 +70,8 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    // Extract deckId from original path via query parameter or path
-    let deckId = event.queryStringParameters?.deckId;
-    
-    if (!deckId) {
-      // Try to extract from the original path in headers
-      const originalPath = event.headers['x-nf-request-path'] || event.path;
-      const pathMatch = originalPath.match(/\/api\/decks\/([^\/]+)\/details/);
-      deckId = pathMatch ? pathMatch[1] : null;
-    }
+    // Extract deckId from query parameter (forwarded by redirect)
+    const deckId = event.queryStringParameters?.deckId;
     
     if (!deckId) {
       return {
@@ -90,14 +83,8 @@ exports.handler = async (event, context) => {
 
     console.log(`Fetching deck details for: ${deckId}`);
 
-    // Load static data - try multiple possible paths
-    let staticDataPath = path.join(__dirname, '../../shared/static-precon-data.json');
-    if (!fs.existsSync(staticDataPath)) {
-      staticDataPath = path.join(__dirname, '../../dist/public/shared/static-precon-data.json');
-    }
-    if (!fs.existsSync(staticDataPath)) {
-      staticDataPath = path.join(process.cwd(), 'shared/static-precon-data.json');
-    }
+    // Load static data from included file in function bundle
+    const staticDataPath = path.resolve(process.cwd(), 'shared/static-precon-data.json');
     let staticData;
     
     try {

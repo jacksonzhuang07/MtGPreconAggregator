@@ -82,14 +82,8 @@ exports.handler = async (event, context) => {
 
     console.log(`Starting price update for deck: ${deckId}`);
 
-    // Load static data - try multiple possible paths
-    let staticDataPath = path.join(__dirname, '../../shared/static-precon-data.json');
-    if (!fs.existsSync(staticDataPath)) {
-      staticDataPath = path.join(__dirname, '../../dist/public/shared/static-precon-data.json');
-    }
-    if (!fs.existsSync(staticDataPath)) {
-      staticDataPath = path.join(process.cwd(), 'shared/static-precon-data.json');
-    }
+    // Load static data from included file in function bundle
+    const staticDataPath = path.resolve(process.cwd(), 'shared/static-precon-data.json');
     let staticData;
     
     try {
