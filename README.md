@@ -1,344 +1,293 @@
 # MTG Precon Deck Price Analyzer
-## Technical Whitepaper & Documentation
 
-### Executive Summary
+A comprehensive full-stack web application for analyzing the value of Magic: The Gathering preconstructed decks with real-time pricing data and Google AdSense monetization.
 
-The MTG Precon Deck Price Analyzer is a sophisticated full-stack web application designed to analyze the current market value of Magic: The Gathering preconstructed decks. By leveraging real-time pricing data from the Scryfall API and providing an intuitive user interface, the application enables users to make informed decisions about deck purchases and investments.
+![MTG Precon Analyzer](https://img.shields.io/badge/MTG-Precon%20Analyzer-blue)
+![React](https://img.shields.io/badge/React-18-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![AdSense](https://img.shields.io/badge/Google-AdSense-green)
 
-The system processes CSV deck data (typically exported from Moxfield), performs comprehensive price analysis with automatic rate limiting, and presents results through interactive rankings, statistical summaries, and detailed card breakdowns.
+## Features
 
----
+- **Real-time pricing** via Scryfall API integration
+- **CSV import** for bulk deck analysis (Moxfield compatible)
+- **Interactive rankings** with filtering and sorting
+- **Card breakdowns** with detailed value analysis
+- **Monetization** through Google AdSense integration
+- **Responsive design** with black/white minimalist aesthetic
+- **Rate limiting** to respect API constraints
 
-## 🏗️ System Architecture
+## Quick Start
 
-### Technology Stack
+### Prerequisites
 
-#### Frontend Technologies
-- **React 18** with TypeScript - Modern component-based UI library with full type safety
-- **Vite** - Fast build tool and development server with hot module replacement
-- **Wouter** - Lightweight client-side routing library (3kB alternative to React Router)
-- **TanStack Query v5** - Powerful data synchronization for server state management
-- **Radix UI** - Headless, accessible UI primitive components
-- **shadcn/ui** - Beautiful component system built on Radix UI and Tailwind CSS
-- **Tailwind CSS** - Utility-first CSS framework with custom design system
-- **React Hook Form** - Performant form library with easy validation
-- **Framer Motion** - Production-ready motion library for animations
+- Node.js 18+ 
+- npm or yarn
+- PostgreSQL database (optional - uses in-memory storage by default)
 
-#### Backend Technologies
-- **Node.js** with **Express.js** - Robust server-side JavaScript runtime and web framework
-- **TypeScript** - Full type safety across the entire backend
-- **Drizzle ORM** - Type-safe and performant SQL ORM with PostgreSQL support
-- **PostgreSQL** - Relational database with JSONB support for complex data
-- **Zod** - Runtime type validation for API requests and responses
+### Installation
 
-#### Development & Build Tools
-- **TSX** - Fast TypeScript execution for development
-- **ESBuild** - Ultra-fast JavaScript bundler for production builds
-- **Drizzle Kit** - Database migration and introspection tools
-- **PostCSS & Autoprefixer** - CSS processing and vendor prefixing
-
-### Architecture Patterns
-
-#### Frontend Architecture
-- **Component-Driven Development**: Modular, reusable components with clear separation of concerns
-- **Custom Hooks Pattern**: Business logic encapsulated in reusable hooks (`usePriceAnalysis`, `useFileUpload`, `useDeckSelection`)
-- **Server State Management**: TanStack Query handles all server interactions with automatic caching, background updates, and optimistic updates
-- **Form State Management**: React Hook Form with Zod validation for type-safe forms
-- **Error Boundary Pattern**: Comprehensive error handling with user-friendly feedback
-
-#### Backend Architecture
-- **Layered Architecture**: Clear separation between routes, business logic, and data access
-- **Repository Pattern**: Abstract storage interface (`IStorage`) with pluggable implementations
-- **API-First Design**: RESTful endpoints with consistent JSON responses
-- **Rate Limiting**: Built-in delays for external API calls to respect service limits
-- **Job Queue Pattern**: Asynchronous analysis jobs with progress tracking
-
----
-
-## 🔧 Core Functionality
-
-### 1. CSV Data Processing
-- **File Upload & Validation**: Drag-and-drop CSV upload with comprehensive validation
-- **Deck Extraction**: Intelligent parsing of Moxfield export format
-- **Data Normalization**: Standardized card and deck information extraction
-- **Error Handling**: Detailed validation messages for malformed data
-
-### 2. Real-Time Price Analysis
-- **Scryfall API Integration**: Fetches current market prices for Magic cards
-- **Rate Limiting**: 100ms delays between requests to respect API guidelines
-- **Fallback Strategies**: Regular USD price with foil price fallback
-- **Error Recovery**: Graceful handling of missing cards or API failures
-
-### 3. Deck Analysis Engine
-- **Value Calculation**: Aggregates individual card prices into total deck values
-- **Statistical Analysis**: Calculates averages, ranges, and distribution metrics
-- **Ranking System**: Sorts decks by value with comprehensive filtering options
-- **Progress Tracking**: Real-time updates during long-running analysis jobs
-
-### 4. Interactive User Interface
-- **Progressive Disclosure**: Step-by-step workflow from upload to results
-- **Real-Time Feedback**: Progress bars, loading states, and status updates
-- **Advanced Filtering**: Format, search term, and price range filters
-- **Data Export**: CSV export functionality for analyzed results
-- **Responsive Design**: Mobile-friendly interface with touch interactions
-
----
-
-## 📊 Data Model
-
-### Database Schema
-
-#### Cards Table
-```typescript
-{
-  id: string (UUID, Primary Key)
-  name: string (Card name)
-  setCode: string (MTG set code)
-  setName: string (Full set name)
-  scryfallId: string (Scryfall unique identifier)
-  manaCost: string (Mana cost representation)
-  cmc: number (Converted mana cost)
-  type: string (Card type line)
-  rarity: string (Card rarity)
-  priceUsd: number (Current USD price)
-  priceUpdatedAt: string (Last price update timestamp)
-}
-```
-
-#### Precon Decks Table
-```typescript
-{
-  id: string (UUID, Primary Key)
-  name: string (Deck name)
-  format: string (MTG format: Commander, Standard, etc.)
-  commander: string (Commander card name for EDH decks)
-  totalValue: number (Calculated total deck value)
-  cardCount: number (Total number of cards)
-  uniqueCardCount: number (Number of unique cards)
-  publicUrl: string (Moxfield deck URL)
-  description: string (Deck description)
-}
-```
-
-#### Deck Cards Junction Table
-```typescript
-{
-  id: string (UUID, Primary Key)
-  deckId: string (Foreign key to precon_decks)
-  cardId: string (Foreign key to cards)
-  quantity: number (Number of copies in deck)
-  finish: string (Card finish: foil/nonFoil)
-}
-```
-
-#### Analysis Jobs Table
-```typescript
-{
-  id: string (UUID, Primary Key)
-  status: string (pending/processing/completed/failed)
-  totalCards: number (Total cards to process)
-  processedCards: number (Cards processed so far)
-  startedAt: string (Job start timestamp)
-  completedAt: string (Job completion timestamp)
-  errorMessage: string (Error details if failed)
-}
-```
-
-### Type Safety
-- **Drizzle ORM Integration**: Full TypeScript types inferred from database schema
-- **Zod Validation**: Runtime type checking for all API inputs and outputs
-- **Shared Types**: Common type definitions shared between frontend and backend
-- **Type-Safe API Calls**: TanStack Query with TypeScript for compile-time API safety
-
----
-
-## 🌐 API Architecture
-
-### RESTful Endpoints
-
-#### File Processing
-- `POST /api/decks/parse` - Parse CSV data and extract deck information
-- `POST /api/analysis/start` - Initiate price analysis for selected decks
-- `GET /api/analysis/:jobId/progress` - Track analysis job progress
-- `DELETE /api/analysis/reset` - Clear all analysis data
-
-#### Data Retrieval
-- `GET /api/decks/rankings` - Get ranked deck list with optional filtering
-- `GET /api/analysis/stats` - Get analysis summary statistics
-- `GET /api/decks/:id` - Get detailed deck information with card breakdown
-
-#### External API Integration
-- **Scryfall API**: `https://api.scryfall.com/cards/named` for card price lookups
-- **Rate Limiting**: 100ms delays between requests
-- **Error Handling**: Graceful degradation for API failures
-- **Caching Strategy**: Database storage of fetched prices with timestamps
-
----
-
-## 🎨 User Experience Design
-
-### Design System
-- **Color Palette**: Carefully crafted HSL color variables for light and dark themes
-- **Typography**: System font stack with optimal readability
-- **Spacing**: Consistent 8px grid system throughout the interface
-- **Animations**: Subtle micro-interactions using Framer Motion
-- **Accessibility**: WCAG 2.1 compliant with keyboard navigation and screen reader support
-
-### User Journey Flow
-1. **Landing Page**: Clean introduction with clear call-to-action
-2. **File Upload**: Drag-and-drop interface with validation feedback
-3. **Deck Selection**: Multi-select interface with deck previews
-4. **Analysis Progress**: Real-time progress tracking with detailed status updates
-5. **Results Dashboard**: Comprehensive rankings table with filtering and sorting
-6. **Detailed Analysis**: Card-by-card breakdown with pricing information
-
-### Responsive Design
-- **Mobile First**: Optimized for touch interactions and small screens
-- **Progressive Enhancement**: Enhanced features for larger screens
-- **Performance Optimized**: Lazy loading and code splitting for fast load times
-
----
-
-## ⚡ Performance Optimizations
-
-### Frontend Performance
-- **Code Splitting**: Dynamic imports for route-based code splitting
-- **Query Optimization**: TanStack Query caching reduces redundant API calls
-- **Virtual Scrolling**: Efficient rendering of large deck lists
-- **Image Optimization**: Lazy loading and responsive images
-- **Bundle Analysis**: Optimized bundle size with tree shaking
-
-### Backend Performance
-- **Database Indexing**: Optimized indexes for common query patterns
-- **Connection Pooling**: Efficient database connection management
-- **Caching Strategy**: In-memory caching for frequently accessed data
-- **Rate Limiting**: Intelligent throttling of external API calls
-- **Async Processing**: Non-blocking I/O for file processing and API calls
-
----
-
-## 🔒 Security & Reliability
-
-### Security Measures
-- **Input Validation**: Comprehensive Zod schemas for all user inputs
-- **SQL Injection Prevention**: Parameterized queries via Drizzle ORM
-- **Session Security**: Secure session configuration with CSRF protection
-- **Error Handling**: Safe error messages that don't expose system internals
-
-### Reliability Features
-- **Graceful Degradation**: Application continues to function with API failures
-- **Progress Persistence**: Analysis jobs survive server restarts
-- **Data Validation**: Multi-layer validation from frontend to database
-- **Error Recovery**: Automatic retry mechanisms for transient failures
-
----
-
-## 🚀 Development Workflow
-
-### Development Environment
 ```bash
+# Clone the repository
+git clone https://github.com/yourusername/mtg-precon-analyzer.git
+cd mtg-precon-analyzer
+
+# Install dependencies
+npm install
+
 # Start development server
-npm run dev          # Runs both frontend and backend with hot reload
-
-# Type checking
-npm run check        # TypeScript compilation check
-
-# Database operations
-npm run db:push      # Push schema changes to database
-
-# Production build
-npm run build        # Build optimized production bundle
-npm start           # Start production server
+npm run dev
 ```
 
-### Project Structure
+The application will be available at `http://localhost:5000`
+
+## Google AdSense Setup Guide
+
+### Phase 1: Prepare Your Site for AdSense
+
+#### 1. Deploy to GitHub Pages
+
+**Important**: For AdSense approval, you need the root domain format.
+
+1. Create a repository named exactly: `yourusername.github.io`
+2. Push your code to this repository
+3. Enable GitHub Pages in repository settings
+4. Your site will be available at: `https://yourusername.github.io`
+
+#### 2. Essential Pages (Already Included)
+
+This application includes all required pages for AdSense approval:
+
+- ✅ **Privacy Policy** (`/privacy-policy`)
+- ✅ **About Page** (`/about`) 
+- ✅ **Contact Page** (`/contact`)
+- ✅ **Terms of Service** (`/terms-of-service`)
+
+These pages are accessible via the footer navigation and contain comprehensive, original content.
+
+#### 3. Environment Variables
+
+Set up your AdSense Publisher ID:
+
+**For all environments:**
+```bash
+# Add to your environment secrets/variables
+VITE_GOOGLE_ADSENSE_PUBLISHER_ID=ca-pub-YOUR_PUBLISHER_ID
 ```
-├── client/src/
-│   ├── components/     # Reusable UI components
-│   ├── pages/         # Route components
-│   ├── hooks/         # Custom React hooks
-│   ├── services/      # API client services
-│   ├── lib/           # Utility functions
-│   └── types/         # TypeScript type definitions
-├── server/
-│   ├── routes.ts      # API endpoint definitions
-│   ├── storage.ts     # Data access layer
-│   └── index.ts       # Server entry point
-├── shared/
-│   └── schema.ts      # Shared data models and types
-└── attached_assets/   # Static assets and uploads
+
+**Note**: The `VITE_` prefix is required for the frontend to access the variable in all environments including GitHub Pages, Netlify, Vercel, etc.
+
+### Phase 2: Apply for Google AdSense
+
+#### Prerequisites for Approval
+
+1. **Age**: You must be 18+ years old
+2. **Content**: Your MTG analyzer provides original, valuable functionality ✅
+3. **Traffic**: Aim for 100+ daily visitors before applying
+4. **Domain age**: 3-6 months old domains have better approval rates
+
+#### Application Process
+
+1. **Visit AdSense**: Go to [Google AdSense](https://www.google.com/adsense/)
+2. **Create account**: Sign up with your Google account
+3. **Add your site**: Enter `https://yourusername.github.io`
+4. **Connect your site**: Add the AdSense code to your `<head>` tag
+5. **Wait for review**: Typically 1-14 days for initial review
+
+#### AdSense Integration (Already Implemented)
+
+The application includes a `GoogleAdSense` component with ads placed strategically:
+
+**Ad Placement 1: During Analysis**
+- Location: Below progress section during deck analysis
+- Format: Auto-responsive  
+- Slot ID: `1234567890` (update with your actual ad slot)
+
+**Ad Placement 2: Card Breakdown**
+- Location: Within card detail expansion
+- Format: Rectangle
+- Slot ID: `9876543210` (update with your actual ad slot)
+
+**Additional Setup Requirements:**
+
+1. **Add ads.txt file**: Create a `public/ads.txt` file with:
+```
+google.com, pub-xxxxxxxxxxxxxxxx, DIRECT, f08c47fec0942fa0
+```
+Replace `pub-xxxxxxxxxxxxxxxx` with your Publisher ID.
+
+2. **Update Ad Slots**: In the GoogleAdSense components, replace placeholder slot IDs with your actual Google AdSense ad slot IDs from your AdSense dashboard.
+
+### Phase 3: Revenue Optimization
+
+#### Expected Revenue
+
+- **Minimum payout**: $100 from Google
+- **Typical RPM**: $1-3 per 1,000 page views
+- **Monthly target**: 20,000-40,000 page views = $100-200/month
+
+#### Traffic Generation Tips
+
+1. **SEO Optimization**: All pages include proper meta descriptions and titles
+2. **Content Marketing**: Share on MTG forums and communities
+3. **Social Media**: Promote on Twitter, Reddit (r/magicTCG), Discord servers
+4. **Features**: Regular updates and new precon deck analysis
+
+#### Ad Performance Monitoring
+
+Access your AdSense dashboard to track:
+- Page views and impressions
+- Click-through rates (CTR)
+- Revenue per mille (RPM)
+- Geographic performance
+
+## Technical Architecture
+
+### Frontend Stack
+- **React 18** with TypeScript and Vite
+- **Wouter** for lightweight routing
+- **TanStack Query** for API state management
+- **Tailwind CSS** with shadcn/ui components
+- **Radix UI** for accessible primitives
+
+### Backend Stack
+- **Express.js** with TypeScript
+- **Drizzle ORM** with PostgreSQL
+- **Scryfall API** integration
+- **Rate limiting** for API compliance
+- **Session management** with connect-pg-simple
+
+### Key Components
+
+```
+client/src/
+├── components/
+│   ├── GoogleAdSense.tsx      # AdSense integration component
+│   ├── ProgressSection.tsx    # Analysis progress with ads
+│   ├── CardBreakdown.tsx      # Card details with ads
+│   └── PreconRankingTable.tsx # Main results table
+├── pages/
+│   ├── StaticHome.tsx         # Main application page
+│   ├── About.tsx              # About page for AdSense
+│   ├── Contact.tsx            # Contact page for AdSense
+│   ├── PrivacyPolicy.tsx      # Privacy policy for AdSense
+│   └── TermsOfService.tsx     # Terms of service for AdSense
+└── hooks/
+    └── useStaticAnalysis.ts   # Analysis logic and state
 ```
 
-### Development Guidelines
-- **Type-First Development**: Define types before implementation
-- **Component-Driven Development**: Build in isolation with Storybook-ready components
-- **Test-Driven Development**: Comprehensive testing with Playwright for E2E
-- **API-First Design**: Backend endpoints defined before frontend integration
+## Deployment
+
+### Recommended Deployment (Static Hosting)
+
+**Note**: This is a full-stack application with Express.js backend. GitHub Pages only hosts static files, so use these recommended platforms:
+
+#### Option 1: Vercel (Recommended)
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy with zero configuration
+vercel
+
+# Add environment variable in Vercel dashboard:
+# VITE_GOOGLE_ADSENSE_PUBLISHER_ID=ca-pub-YOUR_PUBLISHER_ID
+```
+
+#### Option 2: Netlify
+```bash
+# Build for production
+npm run build
+
+# Deploy to Netlify (drag & drop dist folder or use CLI)
+# Add environment variable in Netlify dashboard:
+# VITE_GOOGLE_ADSENSE_PUBLISHER_ID=ca-pub-YOUR_PUBLISHER_ID
+```
+
+#### Option 3: Static-only GitHub Pages
+If you want to use GitHub Pages, modify the app to be frontend-only:
+1. Remove all server-side functionality
+2. Use static JSON files for deck data  
+3. Deploy only the `client/dist` folder
+
+### Custom Domain (Recommended)
+
+For better AdSense approval rates:
+
+1. **Purchase a domain** (e.g., `mtg-analyzer.com`)
+2. **Configure DNS** to point to GitHub Pages
+3. **Update repository settings** with custom domain
+4. **Enable HTTPS** (automatic with GitHub Pages)
+
+## AdSense Compliance
+
+### Content Policy Compliance
+- ✅ Original content and functionality
+- ✅ No copyrighted Magic card images used
+- ✅ Pricing data properly attributed to Scryfall
+- ✅ Clean, professional design
+- ✅ Mobile-responsive layout
+
+### Technical Compliance
+- ✅ Fast loading times with Vite optimization
+- ✅ Accessible design with proper ARIA labels
+- ✅ Clean HTML structure
+- ✅ No malicious code or redirects
+- ✅ Proper error handling
+
+## Troubleshooting
+
+### Common AdSense Issues
+
+**"Site can't be reached"**
+- Ensure your GitHub repository is named `yourusername.github.io`
+- Check that GitHub Pages is enabled in settings
+- Wait up to 24 hours for DNS propagation
+
+**"Insufficient content"**
+- The app functionality counts as content
+- Add more detailed descriptions in About/Contact pages if needed
+- Consider adding a blog section with MTG strategy content
+
+**"Navigation problems"**
+- All required pages are accessible via footer navigation
+- Test all internal links work properly
+- Ensure 404 errors don't prevent crawling
+
+### Development Issues
+
+**AdSense ads not showing locally**
+- Ads only show on approved domains
+- Use placeholder content during development
+- Set `VITE_GOOGLE_ADSENSE_PUBLISHER_ID` for testing
+
+**Rate limiting errors**
+- Scryfall API has rate limits (10 requests/second)
+- Built-in delays handle this automatically
+- Check console for rate limit warnings
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Disclaimer
+
+This application is not affiliated with Wizards of the Coast or Magic: The Gathering. All card data and pricing information is sourced from Scryfall's public API. Card names and game mechanics are trademarks of Wizards of the Coast.
+
+## Support
+
+- **GitHub Issues**: Report bugs and request features
+- **Email**: Contact via the Contact page
+- **Documentation**: Check this README for setup help
 
 ---
 
-## 📈 Scalability Considerations
-
-### Current Architecture Benefits
-- **Modular Design**: Easy to extend with new features and integrations
-- **Type Safety**: Reduces bugs and improves maintainability
-- **Caching Strategy**: Efficient data access patterns
-- **Async Processing**: Handles long-running operations gracefully
-
-### Future Enhancement Opportunities
-- **User Authentication**: Multi-user support with individual data isolation
-- **Real-Time Updates**: WebSocket integration for live price updates
-- **Advanced Analytics**: Historical price tracking and trend analysis
-- **Deck Optimization**: AI-powered deck improvement suggestions
-- **Mobile App**: React Native application for mobile users
-- **Export Formats**: Additional export options (PDF, Excel)
-
----
-
-## 🛠️ Technical Debt & Maintenance
-
-### Code Quality Measures
-- **TypeScript Coverage**: 100% TypeScript with strict mode enabled
-- **Linting**: ESLint configuration for consistent code style
-- **Format Consistency**: Prettier for automated code formatting
-- **Dependency Management**: Regular updates with security auditing
-
-### Monitoring & Observability
-- **Error Tracking**: Comprehensive error logging and monitoring
-- **Performance Metrics**: Core web vitals tracking
-- **API Monitoring**: Response time and error rate tracking
-- **Database Performance**: Query performance monitoring
-
----
-
-## 🎯 Business Value
-
-### User Benefits
-- **Time Savings**: Automated analysis versus manual price checking
-- **Accuracy**: Real-time pricing eliminates outdated information
-- **Decision Support**: Data-driven deck purchasing decisions
-- **Comprehensive Analysis**: Detailed breakdowns for informed choices
-
-### Technical Benefits
-- **Maintainability**: Clean architecture reduces long-term costs
-- **Scalability**: Architecture supports growth and new features
-- **Reliability**: Robust error handling ensures consistent operation
-- **Performance**: Optimized for fast response times and smooth user experience
-
-### Market Positioning
-- **Unique Value Proposition**: Only tool focusing specifically on preconstructed deck analysis
-- **Quality Focus**: Professional-grade implementation with attention to detail
-- **User-Centric Design**: Intuitive interface designed for Magic players
-- **Technical Excellence**: Modern stack with best practices implementation
-
----
-
-## 📋 Conclusion
-
-The MTG Precon Deck Price Analyzer represents a comprehensive solution for Magic: The Gathering players seeking to make informed decisions about preconstructed deck purchases. Through careful architectural design, modern technology choices, and user-centered development, the application delivers a reliable, performant, and scalable platform for deck value analysis.
-
-The technical foundation provides excellent opportunities for future enhancement while maintaining the core value proposition of accurate, real-time deck analysis. The modular design and comprehensive type safety ensure long-term maintainability and developer productivity.
-
----
-
-*This whitepaper serves as both technical documentation and architectural reference for the MTG Precon Deck Price Analyzer. For specific implementation details, refer to the inline code documentation and type definitions throughout the codebase.*
+**Ready for monetization!** Follow the AdSense setup guide above to start earning revenue from your MTG analysis tool.

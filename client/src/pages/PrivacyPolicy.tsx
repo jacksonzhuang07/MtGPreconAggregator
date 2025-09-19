@@ -82,7 +82,20 @@ export default function PrivacyPolicy() {
               </div>
               <div>
                 <h3 className="text-lg font-medium text-white">Google AdSense</h3>
-                <p>We use Google AdSense to display advertisements. Google may use cookies and similar technologies to serve ads based on your interests. You can manage your ad preferences at <a href="https://adssettings.google.com" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>.</p>
+                <div className="space-y-3">
+                  <p>We use Google AdSense to display advertisements on our website. Google and its partners use cookies and other technologies to:</p>
+                  <ul className="list-disc list-inside space-y-1 pl-4 text-white/80">
+                    <li>Serve personalized ads based on your interests and previous visits</li>
+                    <li>Serve non-personalized ads when personalization is not available</li>
+                    <li>Measure ad performance and provide reporting</li>
+                  </ul>
+                  <p>You can control your advertising experience:</p>
+                  <ul className="list-disc list-inside space-y-1 pl-4 text-white/80">
+                    <li><a href="https://adssettings.google.com" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Google Ads Settings</a> - Manage personalized advertising</li>
+                    <li><a href="https://optout.aboutads.info" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Digital Advertising Alliance</a> - Opt out of interest-based ads</li>
+                    <li><a href="https://policies.google.com/technologies/ads" className="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Google's Advertising Policy</a> - Learn more about how Google uses data</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </section>
