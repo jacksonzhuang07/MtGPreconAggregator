@@ -167,8 +167,8 @@ export default function StaticHome() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="bg-primary text-primary-foreground rounded-lg p-2">
-                <div className="text-xl">🎴</div>
+              <div className="bg-primary text-primary-foreground rounded-lg p-3 shadow-md">
+                <div className="text-xl font-semibold">MTG</div>
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-foreground">MTG Precon Price Analyzer</h1>
@@ -218,41 +218,40 @@ export default function StaticHome() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section - Show when no selection is active */}
         {!showDeckSelection && !isAnalyzing && !hasData && (
-          <div className="text-center py-12">
-            <div className="bg-primary text-primary-foreground rounded-lg p-4 w-16 h-16 mx-auto mb-6 flex items-center justify-center">
-              <Database className="h-8 w-8" />
+          <div className="text-center py-16">
+            <div className="bg-primary text-primary-foreground rounded-xl p-6 w-20 h-20 mx-auto mb-8 flex items-center justify-center shadow-lg">
+              <Database className="h-10 w-10" />
             </div>
-            <h2 className="text-3xl font-bold text-foreground mb-4">
-              MTG Precon Price Analyzer
+            <h2 className="text-4xl font-bold text-foreground mb-6">
+              Analyze Your MTG Precons
             </h2>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Analyze {availableDecks.length} preconstructed Magic: The Gathering decks with real pricing data. 
-              Select specific decks to compare values and find the best deals.
+            <p className="text-lg text-muted-foreground mb-12 max-w-2xl mx-auto leading-relaxed">
+              Compare {availableDecks.length} preconstructed Magic: The Gathering decks with real-time pricing data. 
+              Make informed decisions about your next purchase.
             </p>
             <Button
               onClick={handleStartSelection}
               size="lg"
-              className="flex items-center space-x-2"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 text-lg px-8 py-3 rounded-xl shadow-lg font-medium focus-visible:ring-2 focus-visible:ring-primary/80 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               data-testid="button-start-analysis"
             >
-              <Database className="h-5 w-5" />
-              <span>Browse Precon Decks</span>
+              Browse Precon Decks
             </Button>
             
             {metadata && (
-              <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Total Decks</h3>
-                  <p className="text-3xl font-bold text-primary">{metadata.totalDecks.toLocaleString()}</p>
+              <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                <div className="bg-card border border-border rounded-xl p-8 text-center">
+                  <h3 className="text-lg font-medium text-muted-foreground mb-3">Total Decks</h3>
+                  <p className="text-4xl font-bold text-foreground">{metadata.totalDecks.toLocaleString()}</p>
                 </div>
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Unique Cards</h3>
-                  <p className="text-3xl font-bold text-primary">{metadata.totalCards.toLocaleString()}</p>
+                <div className="bg-card border border-border rounded-xl p-8 text-center">
+                  <h3 className="text-lg font-medium text-muted-foreground mb-3">Unique Cards</h3>
+                  <p className="text-4xl font-bold text-foreground">{metadata.totalCards.toLocaleString()}</p>
                 </div>
-                <div className="bg-card border border-border rounded-lg p-6">
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Data Source</h3>
-                  <p className="text-sm text-muted-foreground">Moxfield Export</p>
-                  <p className="text-xs text-muted-foreground">Updated {new Date(metadata.generatedAt).toLocaleDateString()}</p>
+                <div className="bg-card border border-border rounded-xl p-8 text-center">
+                  <h3 className="text-lg font-medium text-muted-foreground mb-3">Data Source</h3>
+                  <p className="text-sm text-foreground font-medium">Moxfield Export</p>
+                  <p className="text-xs text-muted-foreground mt-1">Updated {new Date(metadata.generatedAt).toLocaleDateString()}</p>
                 </div>
               </div>
             )}
@@ -362,17 +361,17 @@ export default function StaticHome() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-card border-t border-border mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <footer className="bg-card border-t border-border mt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-sm text-muted-foreground mb-4 md:mb-0">
-              <p>MTG Precon Price Analyzer • Static Dataset Edition</p>
-              <p className="mt-1">Pricing data from Moxfield exports with Scryfall integration</p>
+            <div className="text-sm text-muted-foreground mb-6 md:mb-0">
+              <p className="font-medium">MTG Precon Price Analyzer</p>
+              <p className="mt-2 text-xs">Real-time pricing data from Scryfall integration</p>
             </div>
-            <div className="flex items-center space-x-6 text-sm">
+            <div className="flex items-center space-x-8 text-sm">
               <a 
                 href="#" 
-                className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-1"
+                className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-2"
                 data-testid="link-help"
               >
                 <HelpCircle className="h-4 w-4" />
@@ -380,7 +379,7 @@ export default function StaticHome() {
               </a>
               <a 
                 href="#" 
-                className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-1"
+                className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-2"
                 data-testid="link-docs"
               >
                 <BookOpen className="h-4 w-4" />
@@ -388,7 +387,7 @@ export default function StaticHome() {
               </a>
               <a 
                 href="#" 
-                className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-1"
+                className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-2"
                 data-testid="link-source"
               >
                 <Github className="h-4 w-4" />
