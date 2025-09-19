@@ -35,8 +35,8 @@ export default function Contact() {
                   For general questions about the application, features, or usage.
                 </p>
                 <div className="bg-white/5 rounded-lg p-3">
-                  <a href="mailto:hello@example.com" className="text-blue-400 hover:text-blue-300">
-                    <code>hello@example.com</code>
+                  <a href="mailto:anbiljz@gmail.com" className="text-blue-400 hover:text-blue-300">
+                    <code>anbiljz@gmail.com</code>
                   </a>
                 </div>
               </div>
@@ -50,8 +50,8 @@ export default function Contact() {
                   Found a bug or experiencing technical issues? Let us know!
                 </p>
                 <div className="bg-white/5 rounded-lg p-3">
-                  <a href="mailto:bugs@example.com" className="text-red-400 hover:text-red-300">
-                    <code>bugs@example.com</code>
+                  <a href="mailto:anbiljz@gmail.com" className="text-red-400 hover:text-red-300">
+                    <code>anbiljz@gmail.com</code>
                   </a>
                 </div>
               </div>
@@ -65,8 +65,8 @@ export default function Contact() {
                   Have ideas for new features or improvements?
                 </p>
                 <div className="bg-white/5 rounded-lg p-3">
-                  <a href="mailto:features@example.com" className="text-yellow-400 hover:text-yellow-300">
-                    <code>features@example.com</code>
+                  <a href="mailto:anbiljz@gmail.com" className="text-yellow-400 hover:text-yellow-300">
+                    <code>anbiljz@gmail.com</code>
                   </a>
                 </div>
               </div>
@@ -80,8 +80,8 @@ export default function Contact() {
                   Share your experience and help us improve the tool.
                 </p>
                 <div className="bg-white/5 rounded-lg p-3">
-                  <a href="mailto:feedback@example.com" className="text-green-400 hover:text-green-300">
-                    <code>feedback@example.com</code>
+                  <a href="mailto:anbiljz@gmail.com" className="text-green-400 hover:text-green-300">
+                    <code>anbiljz@gmail.com</code>
                   </a>
                 </div>
               </div>
