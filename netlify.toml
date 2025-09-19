@@ -1,10 +1,23 @@
 [build]
   publish = "dist/public"
   command = "npm run build"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "18"
 
+# API redirects to Netlify functions
+[[redirects]]
+  from = "/api/decks/*/details"
+  to = "/.netlify/functions/deck-details"
+  status = 200
+
+[[redirects]]
+  from = "/api/cards/update-prices"
+  to = "/.netlify/functions/update-prices"
+  status = 200
+
+# SPA redirect (must be last)
 [[redirects]]
   from = "/*"
   to = "/index.html"
