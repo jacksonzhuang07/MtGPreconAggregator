@@ -7,7 +7,8 @@ import { PreconRankingTable } from '@/components/PreconRankingTable';
 import { Button } from '@/components/ui/button';
 import { useStaticAnalysis } from '@/hooks/useStaticAnalysis';
 import { useToast } from '@/hooks/use-toast';
-import { RotateCcw, BookOpen, Github, HelpCircle, ArrowLeft, Database } from 'lucide-react';
+import { RotateCcw, BookOpen, Github, HelpCircle, ArrowLeft, Database, Shield, Phone } from 'lucide-react';
+import { Link } from 'wouter';
 import type { FilterOptions, AnalysisProgress as ClientAnalysisProgress } from '@/types';
 
 export default function StaticHome() {
@@ -369,30 +370,38 @@ export default function StaticHome() {
               <p className="mt-2 text-xs">Real-time pricing data from Scryfall integration</p>
             </div>
             <div className="flex items-center space-x-8 text-sm">
-              <a 
-                href="#" 
+              <Link 
+                href="/about" 
                 className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-2"
-                data-testid="link-help"
-              >
-                <HelpCircle className="h-4 w-4" />
-                <span>Help</span>
-              </a>
-              <a 
-                href="#" 
-                className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-2"
-                data-testid="link-docs"
+                data-testid="link-about"
               >
                 <BookOpen className="h-4 w-4" />
-                <span>Docs</span>
-              </a>
-              <a 
-                href="#" 
+                <span>About</span>
+              </Link>
+              <Link 
+                href="/contact" 
                 className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-2"
-                data-testid="link-source"
+                data-testid="link-contact"
               >
-                <Github className="h-4 w-4" />
-                <span>Source</span>
-              </a>
+                <Phone className="h-4 w-4" />
+                <span>Contact</span>
+              </Link>
+              <Link 
+                href="/privacy-policy" 
+                className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-2"
+                data-testid="link-privacy"
+              >
+                <Shield className="h-4 w-4" />
+                <span>Privacy</span>
+              </Link>
+              <Link 
+                href="/terms-of-service" 
+                className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-2"
+                data-testid="link-terms"
+              >
+                <HelpCircle className="h-4 w-4" />
+                <span>Terms</span>
+              </Link>
             </div>
           </div>
         </div>
