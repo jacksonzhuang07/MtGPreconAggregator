@@ -84,18 +84,38 @@ exports.handler = async (event, context) => {
     console.log(`Fetching deck details for: ${deckId}`);
 
     // Load static data from included file in function bundle
-    const staticDataPath = path.resolve(process.cwd(), 'shared/static-precon-data.json');
+    // Try multiple possible paths for Netlify deployment
+    let staticDataPath = path.resolve(process.cwd(), 'shared/static-precon-data.json');
+    if (!fs.existsSync(staticDataPath)) {
+      staticDataPath = path.resolve(__dirname, '../../shared/static-precon-data.json');
+    }
+    if (!fs.existsSync(staticDataPath)) {
+      staticDataPath = path.resolve('/opt/build/repo/shared/static-precon-data.json');
+    }
+    
+    console.log(`Trying to read static data from: ${staticDataPath}`);
+    console.log(`File exists: ${fs.existsSync(staticDataPath)}`);
+    
     let staticData;
     
     try {
       const fileContent = fs.readFileSync(staticDataPath, 'utf-8');
       staticData = JSON.parse(fileContent);
+      console.log(`Successfully loaded ${staticData.decks?.length || 0} decks and ${staticData.cards?.length || 0} cards`);
     } catch (error) {
       console.error('Failed to read static data:', error);
+      console.error('Current working directory:', process.cwd());
+      console.error('__dirname:', __dirname);
       return {
         statusCode: 500,
         headers,
-        body: JSON.stringify({ error: 'Failed to load static data' })
+        body: JSON.stringify({ 
+          error: 'Failed to load static data',
+          details: error.message,
+          cwd: process.cwd(),
+          dirname: __dirname,
+          attemptedPath: staticDataPath
+        })
       };
     }
 
