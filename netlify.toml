@@ -8,7 +8,6 @@
 
 [functions]
   node_bundler = "esbuild"
-  included_files = ["shared/static-precon-data.json"]
 
 # API redirects to Netlify functions with proper deckId forwarding
 [[redirects]]
